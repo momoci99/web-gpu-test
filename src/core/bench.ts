@@ -14,6 +14,8 @@ export interface RunResult {
   gpu: Summary | null;
   longFrames: { count: number; totalBlockingMs: number } | null;
   droppedRatio: number;
+  /** Wall time per measured frame with the GPU queue drained at the end; exposes GPU-bound work rAF does not throttle. */
+  effectiveFrameMs: number;
 }
 
 export interface FixedOptions {
@@ -50,6 +52,7 @@ export async function runFixed(
   const renderer = await entry.create(host, createScene(config), caps);
   try {
     await collectFrames(() => renderer.frame(), warmupFrames);
+    await renderer.settle?.();
     renderer.drainGpuSamples?.();
 
     let loaf: PerformanceObserver | null = null;
@@ -58,7 +61,10 @@ export async function runFixed(
       loaf = new PerformanceObserver((list) => loafEntries.push(...list.getEntries()));
       loaf.observe({ type: 'long-animation-frame' });
     }
+    const t0 = performance.now();
     const samples = await collectFrames(() => renderer.frame(), measureFrames);
+    await renderer.settle?.();
+    const t1 = performance.now();
     await idleFor(50);
     const gpuMs = renderer.drainGpuSamples?.() ?? [];
     if (loaf) {
@@ -83,15 +89,21 @@ export async function runFixed(
           }
         : null,
       droppedRatio: intervals.filter((x) => x > DROPPED_FACTOR * period).length / intervals.length,
+      effectiveFrameMs: (t1 - t0) / samples.length,
     };
   } finally {
+    await renderer.settle?.();
     renderer.dispose();
   }
 }
 
 export function trialPasses(r: RunResult): boolean {
   const period = 1000 / r.refreshHz;
-  return r.interval.median <= PASS_MEDIAN_FACTOR * period && r.droppedRatio <= PASS_DROPPED_RATIO;
+  return (
+    r.interval.median <= PASS_MEDIAN_FACTOR * period &&
+    r.droppedRatio <= PASS_DROPPED_RATIO &&
+    r.effectiveFrameMs <= PASS_MEDIAN_FACTOR * period
+  );
 }
 
 export interface RampOptions {

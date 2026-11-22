@@ -42,6 +42,7 @@ type Requirement = 'none' | 'webgl2' | 'webgpu';
 interface Renderer {
   readonly id: RendererId;
   frame(): void;                    // advance one fixed step + draw; harness times this call = main-thread cost
+  settle?(): Promise<void>;         // resolves when all submitted work finished on the GPU; WebGPU renderers only (device.queue.onSubmittedWorkDone)
   drainGpuSamples?(): number[];     // resolved timestamp-query durations (ms) since last drain; absent = no GPU timing
   dispose(): void;                  // idempotent; removes DOM, destroys GPU resources
 }
@@ -78,7 +79,8 @@ UI disables an entry whose `requires` is unmet and shows the reason. Internals t
   - `estimateRefresh(): Promise<number>` median idle rAF interval over 60 frames → Hz.
   - `runFixed(entry, config, caps, { warmupFrames: 30, measureFrames: 120 }): Promise<RunResult>` — create, warm up (discarded: includes pipeline compile, first layout), measure, dispose. Collects `long-animation-frame` entries via PerformanceObserver during the measure window when supported.
   - `rampMaxN(trial: (n) => Promise<boolean>, { start: 1000, max: 2_000_000, precision: 0.05 })` — PURE search: double until fail, then bisect to precision. Unit-tested with a fake trial.
-  - Pass criterion for a trial: median interval ≤ 1.1 × refresh period AND dropped ratio (interval > 1.5 × period) ≤ 5 %.
+  - Pass criterion for a trial: median interval ≤ 1.1 × refresh period AND dropped ratio (interval > 1.5 × period) ≤ 5 % AND `effectiveFrameMs` ≤ 1.1 × period.
+  - `effectiveFrameMs = (t1 - t0) / frames`, where `t0` is taken before the measured frames and `t1` after `renderer.settle?.()` resolves. `runFixed` also settles after warm-up and before dispose.
 
 ```ts
 interface RunResult {
@@ -86,6 +88,7 @@ interface RunResult {
   interval: Summary; cpu: Summary; gpu: Summary | null;
   longFrames: { count: number; totalBlockingMs: number } | null;
   droppedRatio: number;
+  effectiveFrameMs: number;
 }
 ```
 
@@ -93,6 +96,7 @@ Known measurement limits to surface in the UI text (not to hide):
 - rAF caps at display refresh, so "max N at refresh Hz" is the headline, not fps.
 - SVG cost is mostly style/layout/paint outside JS: cpuMs undercounts it; interval and LoAF capture it.
 - WebGPU cpuMs = encode + submit only; GPU work shows in gpuMs and, when GPU-bound, in interval.
+- WebGPU submissions are not throttled by rAF (work queues up while the interval stays at one period), so the harness settles the queue and judges by effective frame time.
 - Chrome quantizes timestamp-query (~100 µs) unless WebGPU Developer Features flag is on.
 
 Deliberately not generalized: one-shot compute timing (GEMM, sort) is a different measurement; add it with the GEMM demo, not now.

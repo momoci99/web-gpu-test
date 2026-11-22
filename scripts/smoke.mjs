@@ -47,6 +47,7 @@ function checkResult(id, r) {
   if (!finite(r.cpu) || r.cpu.median < 0) fail(`${id}: bad cpu summary`);
   if (r.gpu !== null && !finite(r.gpu)) fail(`${id}: bad gpu summary`);
   if (!(r.droppedRatio >= 0 && r.droppedRatio <= 1)) fail(`${id}: droppedRatio ${r.droppedRatio}`);
+  if (!(r.effectiveFrameMs > 0 && Number.isFinite(r.effectiveFrameMs))) fail(`${id}: effectiveFrameMs ${r.effectiveFrameMs}`);
 }
 
 const fmt = (x, d = 2) => (x === null || x === undefined ? '-' : x.toFixed(d));
@@ -152,7 +153,7 @@ try {
   if (consoleErrors.length > 0) for (const e of consoleErrors) fail(`console error: ${e}`);
 
   console.log(`\nsmoke only (N=${COUNT}, ${WARMUP} warmup + ${MEASURE} measured frames, refresh ~${fmt(refreshHz, 1)} Hz). Not performance results.`);
-  console.log('renderer         status  interval.med  cpu.med  gpu.med  dropped  LoAF(count/block ms)  note');
+  console.log('renderer         status  interval.med  cpu.med  gpu.med  dropped  eff.frame  LoAF(count/block ms)  note');
   for (const { id, status, r, note } of rows) {
     const loaf = r?.longFrames ? `${r.longFrames.count}/${fmt(r.longFrames.totalBlockingMs, 1)}` : '-';
     console.log(
@@ -163,6 +164,7 @@ try {
         fmt(r?.cpu.median, 3).padStart(8),
         fmt(r?.gpu?.median, 3).padStart(8),
         fmt(r?.droppedRatio, 3).padStart(8),
+        fmt(r?.effectiveFrameMs).padStart(9),
         loaf.padStart(21),
         ` ${note ?? ''}`,
       ].join('  '),

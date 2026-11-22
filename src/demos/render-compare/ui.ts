@@ -14,6 +14,7 @@ const LIMITS_NOTES = [
   'rAF는 화면 주사율에서 멈추므로 헤드라인 지표는 fps가 아니라 "주사율에서 유지되는 최대 N"입니다.',
   'SVG 비용은 대부분 JS 밖(스타일/레이아웃/페인트)에서 발생하므로 cpuMs는 과소 측정됩니다. 프레임 간격과 LoAF가 이를 반영합니다.',
   'WebGPU의 cpuMs는 인코딩 + 제출 시간만 의미합니다. GPU 작업은 gpuMs에 나타나고, GPU 병목일 때는 프레임 간격에도 나타납니다.',
+  'WebGPU 제출은 rAF가 늦춰 주지 않아 작업이 큐에 쌓일 수 있습니다. 그래서 측정 구간 끝에서 큐를 비운 뒤(settle) 실효 프레임 시간으로 통과 여부를 판정합니다.',
   'Chrome은 WebGPU Developer Features 플래그가 꺼져 있으면 timestamp-query를 약 100 µs 단위로 양자화합니다.',
 ];
 
@@ -106,7 +107,7 @@ export function mountRenderCompare(root: HTMLElement, caps: Capabilities): void 
   );
 
   const refreshOutputs = () => {
-    const header = ['렌더러', 'N', '프레임 간격 중앙값', 'p95', 'cpu 중앙값', 'gpu 중앙값', '드롭 비율', 'LoAF(횟수/차단ms)'];
+    const header = ['렌더러', 'N', '프레임 간격 중앙값', 'p95', 'cpu 중앙값', 'gpu 중앙값', '드롭 비율', '실효 프레임 시간', 'LoAF(횟수/차단ms)'];
     const rows = results.map((r) => [
       registry.find((e) => e.id === r.rendererId)?.label ?? r.rendererId,
       String(r.count),
@@ -115,6 +116,7 @@ export function mountRenderCompare(root: HTMLElement, caps: Capabilities): void 
       f(r.cpu.median, 3),
       r.gpu ? f(r.gpu.median, 3) : '-',
       f(r.droppedRatio, 3),
+      f(r.effectiveFrameMs),
       r.longFrames ? `${r.longFrames.count} / ${f(r.longFrames.totalBlockingMs, 1)}` : '-',
     ]);
     tableHost.replaceChildren(

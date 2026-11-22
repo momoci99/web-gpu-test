@@ -10,6 +10,8 @@ export interface Renderer {
   frame(): void;
   /** Resolved timestamp-query durations (ms) since the last drain. Absent means no GPU timing. */
   drainGpuSamples?(): number[];
+  /** Resolves when all work submitted so far has finished on the GPU. Absent when submission already blocks (WebGL2, Canvas, SVG). */
+  settle?(): Promise<void>;
   /** Idempotent. Removes DOM and destroys GPU resources. */
   dispose(): void;
 }

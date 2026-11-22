@@ -29,6 +29,7 @@ export const webgpuCpuEntry: RendererEntry = {
         device.queue.submit([encoder.finish()]);
         timer?.afterSubmit();
       },
+      settle: () => device.queue.onSubmittedWorkDone(),
       drainGpuSamples: timer ? () => timer.drain() : undefined,
       dispose() {
         if (disposed) return;

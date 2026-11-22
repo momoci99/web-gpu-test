@@ -67,7 +67,7 @@ describe('rampMaxN', () => {
 });
 
 describe('trialPasses', () => {
-  const base = (median: number, droppedRatio: number): RunResult => ({
+  const base = (median: number, droppedRatio: number, effectiveFrameMs = median): RunResult => ({
     rendererId: 'canvas2d',
     count: 1,
     refreshHz: 60,
@@ -77,6 +77,7 @@ describe('trialPasses', () => {
     gpu: null,
     longFrames: null,
     droppedRatio,
+    effectiveFrameMs,
   });
 
   it('passes a steady 60 Hz run', () => {
@@ -89,5 +90,9 @@ describe('trialPasses', () => {
 
   it('fails when more than 5% of frames dropped', () => {
     expect(trialPasses(base(16.7, 0.06))).toBe(false);
+  });
+
+  it('fails a GPU-backlogged run whose rAF interval still looks steady', () => {
+    expect(trialPasses(base(16.7, 0, 78))).toBe(false);
   });
 });
