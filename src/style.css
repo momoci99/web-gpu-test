@@ -1,0 +1,40 @@
+:root {
+  color-scheme: light dark;
+  font-family: system-ui, -apple-system, 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
+}
+
+body {
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 16px;
+  line-height: 1.5;
+}
+
+h1 { font-size: 1.4rem; }
+h2 { font-size: 1.1rem; margin-top: 1.6rem; }
+
+.caps { padding-left: 1.2rem; margin: 0.4rem 0; }
+
+.renderer { margin: 0.4rem 0; }
+.renderer small { display: block; opacity: 0.7; margin-left: 1.6rem; }
+.renderer label.disabled { opacity: 0.6; }
+
+.controls { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: 1rem 0 0.5rem; }
+.controls input { width: 7rem; }
+
+.status { min-height: 1.5em; font-variant-numeric: tabular-nums; }
+
+.stage {
+  position: relative;
+  max-width: 100%;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, currentColor 30%, transparent);
+  background: color-mix(in srgb, currentColor 6%, transparent);
+}
+
+.table { overflow-x: auto; }
+table { border-collapse: collapse; font-size: 0.85rem; font-variant-numeric: tabular-nums; }
+th, td { padding: 4px 10px; border-bottom: 1px solid color-mix(in srgb, currentColor 20%, transparent); text-align: right; white-space: nowrap; }
+th:first-child, td:first-child { text-align: left; }
+
+.chart { margin-top: 1rem; }

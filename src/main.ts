@@ -1,7 +1,9 @@
 import { estimateRefresh, runFixed } from './core/bench';
 import { detectCapabilities, unmetReason } from './core/capabilities';
 import { registry } from './demos/render-compare/renderers/registry';
+import { mountRenderCompare } from './demos/render-compare/ui';
 import { verifyComputeParity } from './demos/render-compare/verify';
+import './style.css';
 
 declare global {
   interface Window {
@@ -17,3 +19,6 @@ declare global {
 }
 
 window.__bench = { detectCapabilities, unmetReason, estimateRefresh, runFixed, verifyComputeParity, registry };
+
+const root = document.querySelector<HTMLElement>('#app')!;
+detectCapabilities().then((caps) => mountRenderCompare(root, caps));
