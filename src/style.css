@@ -1,51 +1,247 @@
+@import 'pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css';
+@import '@fontsource/jetbrains-mono/latin-400.css';
+@import '@fontsource/jetbrains-mono/latin-500.css';
+
+/* Tokens. Series colors are fixed per role so "CPU" and "GPU" read the same on every page:
+   cpu-* are warm, gpu-* are cool. */
 :root {
   color-scheme: light dark;
-  font-family: system-ui, -apple-system, 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
+
+  --bg: #fbfbfc;
+  --surface: #ffffff;
+  --sunken: #f1f3f6;
+  --text: #15181e;
+  --muted: #566070;
+  --border: #dde1e8;
+  --border-strong: #b9c0cc;
+  --accent: #2340b8;
+  --accent-soft: #e8ecfb;
+  --on-accent: #ffffff;
+  --code-bg: #f1f3f6;
+  --focus: #2340b8;
+
+  --cpu-a: #d4502a;
+  --cpu-b: #b07d00;
+  --gpu-a: #0b8f7e;
+  --gpu-b: #2a6bd1;
+  --gpu-c: #7a55cc;
+
+  --callout-key: #2340b8;
+  --callout-warn: #b4540a;
+  --callout-try: #0b8f7e;
+  --callout-limit: #7a55cc;
+  --callout-term: #566070;
+
+  --font-sans: 'Pretendard Variable', Pretendard, system-ui, -apple-system, 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+
+  --measure: 720px;
+  --wide: 1040px;
+  --gutter: 16px;
+  --radius: 6px;
+  --topbar-h: 52px;
+
+  font-family: var(--font-sans);
+  font-size: 17px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0e1116;
+    --surface: #161a21;
+    --sunken: #1b2029;
+    --text: #e6e9ef;
+    --muted: #9aa4b4;
+    --border: #2a303b;
+    --border-strong: #3d4552;
+    --accent: #93a8ff;
+    --accent-soft: #1d2540;
+    --on-accent: #0e1116;
+    --code-bg: #1b2029;
+    --focus: #93a8ff;
+
+    --cpu-a: #f0845f;
+    --cpu-b: #e0b13a;
+    --gpu-a: #3fcdb8;
+    --gpu-b: #6ea2f5;
+    --gpu-c: #b095f0;
+
+    --callout-key: #93a8ff;
+    --callout-warn: #f0a15f;
+    --callout-try: #3fcdb8;
+    --callout-limit: #b095f0;
+    --callout-term: #9aa4b4;
+  }
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-padding-top: calc(var(--topbar-h) + 16px);
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
-  max-width: 880px;
-  margin: 0 auto;
-  padding: 16px;
-  line-height: 1.5;
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.75;
+  word-break: keep-all;
+  overflow-wrap: break-word;
+  font-feature-settings: 'tnum' 0;
+  -webkit-font-smoothing: antialiased;
 }
 
-h1 { font-size: 1.4rem; }
-h2 { font-size: 1.1rem; margin-top: 1.6rem; }
+h1, h2, h3, h4 {
+  line-height: 1.3;
+  letter-spacing: -0.02em;
+  font-weight: 700;
+  margin: 2.2em 0 0.6em;
+  text-wrap: balance;
+}
+h1 { font-size: 2.1rem; margin-top: 0; letter-spacing: -0.03em; }
+h2 { font-size: 1.45rem; }
+h3 { font-size: 1.15rem; }
+h4 { font-size: 1rem; }
+p { margin: 0 0 1.1em; }
+ul, ol { padding-left: 1.4em; margin: 0 0 1.1em; }
+li { margin: 0.2em 0; }
 
+a { color: var(--accent); text-underline-offset: 0.2em; text-decoration-thickness: 1px; }
+a:hover { text-decoration-thickness: 2px; }
+
+code, kbd, pre { font-family: var(--font-mono); font-size: 0.88em; }
+:not(pre) > code {
+  background: var(--code-bg);
+  padding: 0.12em 0.4em;
+  border-radius: 4px;
+  overflow-wrap: anywhere;
+}
+
+hr { border: 0; border-top: 1px solid var(--border); margin: 2.5rem 0; }
+
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; border-radius: 3px; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+}
+
+/* Native form controls get the kit look everywhere, including pages not yet on the kit. */
+button, input, select, textarea { font: inherit; color: inherit; }
+button {
+  appearance: none;
+  min-height: 38px;
+  padding: 0 16px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  background: var(--surface);
+  cursor: pointer;
+  font-weight: 550;
+  line-height: 1.2;
+  transition: background-color 0.12s, border-color 0.12s;
+}
+button:hover:not(:disabled) { border-color: var(--text); }
+button:disabled { opacity: 0.45; cursor: not-allowed; }
+button.primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+button.primary:hover:not(:disabled) { filter: brightness(1.1); border-color: var(--accent); }
+
+input[type='number'], input[type='text'], select {
+  min-height: 38px;
+  padding: 0 10px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  background: var(--surface);
+  font-family: var(--font-mono);
+  font-size: 0.92rem;
+}
+input[type='checkbox'], input[type='radio'] { accent-color: var(--accent); width: 1em; height: 1em; margin: 0 0.4em 0 0; vertical-align: -0.12em; }
+input[type='range'] { accent-color: var(--accent); }
+
+/* Shell */
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  height: var(--topbar-h);
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 0 max(var(--gutter), calc((100vw - var(--wide)) / 2));
+  background: color-mix(in srgb, var(--bg) 88%, transparent);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--border);
+}
+.topbar a { color: var(--muted); text-decoration: none; font-weight: 550; font-size: 0.95rem; }
+.topbar a:hover { color: var(--text); }
+.topbar a[aria-current='page'] { color: var(--text); }
+.topnav { display: flex; gap: 20px; }
+.topbar .brand { color: var(--text); font-weight: 700; letter-spacing: -0.02em; margin-right: auto; }
+.topbar .ext::after { content: '\2197'; margin-left: 0.2em; font-size: 0.85em; }
+
+.demo-root { padding-bottom: 96px; }
+/* Demos not yet on the kit append plain children; give them a column. */
+.demo-root > :not(.page, .learn) {
+  max-width: var(--wide);
+  margin-inline: auto;
+  padding-inline: var(--gutter);
+}
+
+/* Base classes used by demos not yet restyled */
 .caps { padding-left: 1.2rem; margin: 0.4rem 0; }
-
 .renderer { margin: 0.4rem 0; }
-.renderer small { display: block; opacity: 0.7; margin-left: 1.6rem; }
+.renderer small { display: block; color: var(--muted); margin-left: 1.6rem; }
 .renderer label.disabled { opacity: 0.6; }
-
-.controls { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: 1rem 0 0.5rem; }
+.controls { display: flex; gap: 8px 12px; align-items: center; flex-wrap: wrap; margin: 1rem 0 0.5rem; }
 .controls input { width: 7rem; }
-
-.status { min-height: 1.5em; font-variant-numeric: tabular-nums; }
-
+.status { min-height: 1.5em; font-variant-numeric: tabular-nums; color: var(--muted); font-size: 0.95rem; }
 .stage {
   position: relative;
   max-width: 100%;
   overflow: hidden;
-  border: 1px solid color-mix(in srgb, currentColor 30%, transparent);
-  background: color-mix(in srgb, currentColor 6%, transparent);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--sunken);
 }
-
-.table { overflow-x: auto; }
+.table { overflow-x: auto; max-width: 100%; }
 table { border-collapse: collapse; font-size: 0.85rem; font-variant-numeric: tabular-nums; }
-th, td { padding: 4px 10px; border-bottom: 1px solid color-mix(in srgb, currentColor 20%, transparent); text-align: right; white-space: nowrap; }
+th, td { padding: 6px 12px; border-bottom: 1px solid var(--border); text-align: right; white-space: nowrap; }
+th { font-weight: 600; color: var(--muted); }
 th:first-child, td:first-child { text-align: left; }
-
-.chart { margin-top: 1rem; }
-
-.back { display: inline-block; margin-bottom: 0.5rem; }
-.notice { padding: 8px 12px; border: 1px solid color-mix(in srgb, currentColor 30%, transparent); }
-.cards { display: grid; gap: 12px; margin-top: 1rem; }
-.card { display: flex; flex-direction: column; gap: 4px; padding: 12px 16px; text-decoration: none; color: inherit; border: 1px solid color-mix(in srgb, currentColor 30%, transparent); }
-.card:hover { background: color-mix(in srgb, currentColor 8%, transparent); }
-.card span { opacity: 0.75; font-size: 0.9rem; }
-
+td { font-family: var(--font-mono); }
+td:first-child { font-family: var(--font-sans); }
+.chart { margin-top: 1rem; max-width: 100%; overflow-x: auto; }
 .checks { display: flex; flex-wrap: wrap; gap: 4px 16px; }
 .checks label.disabled { opacity: 0.6; }
 .crossover { font-weight: 600; }
+.back { display: inline-block; margin: 16px 0 8px; }
+.notice { padding: 10px 14px; border: 1px solid var(--border-strong); border-radius: var(--radius); background: var(--sunken); }
+
+/* Home */
+.home { padding-bottom: 96px; }
+.home-hero { padding: 72px 0 40px; }
+.home-hero h1 { font-size: clamp(2.2rem, 6.4vw, 3.9rem); line-height: 1.12; letter-spacing: -0.045em; margin-bottom: 0.45em; }
+.home-hero .lede { font-size: 1.15rem; color: var(--muted); max-width: 34em; margin: 0; }
+.home-hero .lede + .lede { margin-top: 0.8em; }
+.home h2 { font-size: 1.05rem; letter-spacing: -0.01em; color: var(--muted); font-weight: 650; margin: 56px 0 8px; padding-bottom: 10px; border-bottom: 1px solid var(--border-strong); }
+.path-list, .demo-list { list-style: none; padding: 0; margin: 0; }
+.path-item { margin: 0; border-bottom: 1px solid var(--border); }
+.path-item a { display: grid; grid-template-columns: 2.6rem 1fr; gap: 0 12px; padding: 14px 0; text-decoration: none; color: inherit; }
+.path-item .no { font-family: var(--font-mono); color: var(--muted); font-size: 0.9rem; padding-top: 0.2em; }
+.path-item strong { display: block; font-weight: 650; line-height: 1.4; }
+.path-item span.sum { color: var(--muted); font-size: 0.95rem; line-height: 1.55; }
+.path-item a:hover strong { color: var(--accent); }
+.path-empty { color: var(--muted); padding: 14px 0; }
+.card { display: block; position: relative; padding: 22px 0 22px 22px; border-bottom: 1px solid var(--border); text-decoration: none; color: inherit; }
+.card::before { content: ''; position: absolute; left: 0; top: 24px; bottom: 24px; width: 3px; border-radius: 2px; background: var(--card-accent, var(--border-strong)); }
+.card:hover::before { background: var(--accent); }
+.card strong { display: block; font-size: 1.25rem; letter-spacing: -0.02em; line-height: 1.35; margin-bottom: 4px; }
+.card:hover strong { color: var(--accent); }
+.card .sum { display: block; color: var(--muted); max-width: 40em; line-height: 1.6; }
+.card .rel { display: inline-block; margin-top: 6px; font-size: 0.9rem; color: var(--muted); }
+
+[hidden] { display: none !important; }
+.demo-root > :not(.page, .learn):first-child { padding-top: 40px; }

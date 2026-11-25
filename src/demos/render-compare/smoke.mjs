@@ -29,6 +29,10 @@ export default async function smoke({ page, caps, fail: failOuter, log }) {
   };
 
   log(`caps: ${JSON.stringify(caps)}`);
+  // The live preview starts on load; it must be drawing, and must stop on request so it never shares the GPU with a run.
+  await page.waitForFunction(() => document.querySelector('.stage canvas, .stage svg'), null, { timeout: 15_000 });
+  await page.evaluate(() => window.__demo.suspendPreview());
+  if ((await page.locator('.stage canvas, .stage svg').count()) !== 0) fail('preview: stage not empty after suspendPreview');
   const refreshHz = await page.evaluate(() => window.__demo.estimateRefresh());
   const rows = [];
   const ids = await page.evaluate(() => window.__demo.registry.map((e) => e.id));

@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" id="lc05-race" viewBox="0 0 640 290" width="640" height="290" font-family="sans-serif" font-size="13" fill="none" stroke="currentColor" stroke-width="1.5" role="img" aria-labelledby="lc05-race-t">
+  <title id="lc05-race-t">경쟁 상태: 일반 읽기-더하기-쓰기는 더하기 하나를 잃고, atomicAdd는 차례로 처리해 잃지 않음</title>
+  <style>#lc05-race{color:#1f2328}@media (prefers-color-scheme:dark){#lc05-race{color:#e6edf3}}#lc05-race text{fill:currentColor;stroke:none}</style>
+  <defs>
+    <marker id="lc05-race-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="currentColor" stroke="none"/></marker>
+  </defs>
+
+  <line x1="14" y1="64" x2="14" y2="220" marker-end="url(#lc05-race-a)"/>
+  <text x="8" y="240" font-size="12">시간</text>
+
+  <!-- left: plain += -->
+  <rect x="30" y="12" width="285" height="260" rx="8"/>
+  <text x="44" y="34" font-weight="bold">bins[i] += 1 (아토믹 아님)</text>
+  <g font-size="12" text-anchor="middle">
+    <text x="90" y="58" font-weight="bold">스레드 A</text>
+    <text x="172" y="58" font-weight="bold">bins[i]</text>
+    <text x="255" y="58" font-weight="bold">스레드 B</text>
+    <text x="90" y="88">읽기: 5</text><text x="172" y="88">5</text><text x="255" y="88">읽기: 5</text>
+    <text x="90" y="122">5 + 1 = 6</text><text x="172" y="122">5</text><text x="255" y="122">5 + 1 = 6</text>
+    <text x="90" y="156">쓰기: 6</text><text x="172" y="156">6</text>
+    <text x="172" y="190">6</text><text x="255" y="190">쓰기: 6</text>
+  </g>
+  <rect x="146" y="70" width="52" height="132" rx="4" fill="currentColor" fill-opacity="0.08" stroke-width="1"/>
+  <text x="44" y="232" font-weight="bold">결과 6</text>
+  <text x="44" y="252" font-size="12">두 번 더했는데 1만 늘었습니다.</text>
+
+  <!-- right: atomicAdd -->
+  <rect x="335" y="12" width="290" height="260" rx="8"/>
+  <text x="349" y="34" font-weight="bold">atomicAdd(&amp;bins[i], 1u)</text>
+  <g font-size="12" text-anchor="middle">
+    <text x="395" y="58" font-weight="bold">스레드 A</text>
+    <text x="480" y="58" font-weight="bold">bins[i]</text>
+    <text x="565" y="58" font-weight="bold">스레드 B</text>
+    <text x="395" y="88">atomicAdd</text><text x="480" y="88">5 → 6</text><text x="565" y="88">기다림</text>
+    <text x="480" y="122">6 → 7</text><text x="565" y="122">atomicAdd</text>
+  </g>
+  <rect x="452" y="70" width="56" height="64" rx="4" fill="currentColor" fill-opacity="0.08" stroke-width="1"/>
+  <text x="349" y="232" font-weight="bold">결과 7</text>
+  <text x="349" y="252" font-size="12">읽기-더하기-쓰기를 한 덩어리로 처리하고,</text>
+  <text x="349" y="268" font-size="12">같은 칸에 온 요청은 하나씩 차례로 처리합니다.</text>
+</svg>

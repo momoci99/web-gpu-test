@@ -1,39 +1,28 @@
-import uPlot from 'uplot';
-import 'uplot/dist/uPlot.min.css';
 import { unmetReason, type Capabilities } from '../../core/capabilities';
 import { estimateRefresh } from '../../core/frame-bench';
+import { button, callout, capsPanel, chart, checkList, controls, el, figure, livePreview, page, resultsTable, section, segmented, seriesVar, slider, status, type SeriesToken } from '../../ui';
 import { FILTERS, MAX_RADIUS, RESOLUTIONS, type FilterId } from './filters';
 import { findMaxRadius, runVariant, type RunConfig, type RunResult } from './run';
 import { CameraError, openSource, type SourceKind, type VideoSource } from './source';
-import { registry, type VariantEntry } from './variants';
+import { registry, type VariantEntry, type VariantId } from './variants';
 import { verifyParity } from './verify';
 
-const SERIES_COLORS = ['#e4572e', '#17bebb'];
+const CHAPTER = '08-textures-video';
 const SWEEP_RADII = [1, 2, 4, 8, 16, 32];
-
-const EXPLAINER = [
-  'importExternalTexture는 비디오 프레임을 GPU 텍스처로 복사하지 않고 그대로 바인딩합니다. 대신 이 GPUExternalTexture는 한 프레임 동안만 유효해서 프레임마다 새로 만들어야 합니다.',
-  'CPU 경로의 병목은 계산만이 아닙니다. getImageData는 GPU 쪽 비디오 프레임을 CPU 메모리로 읽어 오는 동기 readback이고, putImageData는 다시 올리는 비용입니다.',
-  '분리형 블러는 (2r+1)×(2r+1) 탭 대신 가로 2r+1, 세로 2r+1 탭, 합계 2·(2r+1) 탭이면 됩니다. 그래도 CPU 비용은 반경 × 픽셀 수에 비례해 늘어납니다.',
-  'GPU 블러는 가로 패스 결과를 스토리지 텍스처 한 장에 쓰고 세로 패스가 그것을 읽는 핑퐁 구조입니다. 가장자리는 CPU와 GPU 모두 clamp-to-edge입니다.',
-];
+const PREVIEW_ORDER: VariantId[] = ['gpu-compute', 'cpu-canvas'];
+const SERIES: Record<VariantId, SeriesToken> = { 'cpu-canvas': 'cpu-a', 'gpu-compute': 'gpu-a' };
 
 const LIMITS_NOTES = [
   '헤드리스 Chromium 수치는 스모크 값이며, 다른 GPU 작업과 겹치면 흔들립니다. 성능 주장으로 쓰지 마세요.',
   'rAF는 주사율에서 멈추므로 프레임 간격 중앙값만으로는 부하를 구분할 수 없습니다. 실효 프레임 시간(큐를 비운 뒤 측정)이 판정 기준입니다.',
   'CPU 변형의 cpu 값은 drawImage + getImageData + 필터 + putImageData 전체입니다. WebGPU 변형의 cpu 값은 인코딩 + 제출만이고, GPU 시간은 gpu 열에 따로 나옵니다.',
+  '미리보기는 합성 영상을 WebGPU 필터에 통과시킨 것이며 측정값이 아닙니다. 측정이 시작되면 멈춥니다.',
   '합성 영상은 canvas.captureStream()으로 만든 비디오라 카메라와 같은 경로(video 요소)를 지나지만 압축 지연이 없고 내용이 결정적입니다.',
 ];
 
-function el<K extends keyof HTMLElementTagNameMap>(tag: K, props: Partial<HTMLElementTagNameMap[K]> = {}, ...children: (Node | string)[]): HTMLElementTagNameMap[K] {
-  const node = Object.assign(document.createElement(tag), props);
-  node.append(...children);
-  return node;
-}
-
 const f = (x: number, d = 2) => x.toFixed(d);
 
-export function mountWebcamFilter(root: HTMLElement, caps: Capabilities): void {
+export function mountWebcamFilter(root: HTMLElement, caps: Capabilities): { suspendPreview(): void; resumePreview(): void } {
   const selected = new Set<string>();
   const results: RunResult[] = [];
   const maxRadii = new Map<string, number>();
@@ -41,65 +30,89 @@ export function mountWebcamFilter(root: HTMLElement, caps: Capabilities): void {
   let busy = false;
   let source: VideoSource | null = null;
   let sourceSize = '';
-  let preview: { stop(): Promise<void> } | null = null;
 
-  const capsList = el('ul', { className: 'caps' });
-  const renderCaps = () => {
-    const gpu = caps.webgpu;
-    capsList.replaceChildren(
-      el('li', { textContent: `WebGPU: ${gpu.kind === 'available' ? `사용 가능 (${gpu.adapterInfo})` : `사용 불가 (${gpu.reason})`}` }),
-      el('li', { textContent: `timestamp-query: ${gpu.kind === 'available' && gpu.timestampQuery ? '지원' : '미지원'}` }),
-      el('li', { textContent: `주사율(추정): ${f(refreshHz, 1)} Hz` }),
-    );
-  };
+  const fig = figure({ caption: '미리보기를 준비하는 중입니다.', width: 800 });
+  const stage = fig.stage;
 
-  const variantBoxes = registry.map((entry) => {
-    const reason = unmetReason(entry.requires, caps);
-    const input = el('input', { type: 'checkbox', disabled: reason !== null });
-    input.addEventListener('change', () => {
-      if (input.checked) selected.add(entry.id);
-      else selected.delete(entry.id);
+  const previewEntry = PREVIEW_ORDER.map((id) => registry.find((e) => e.id === id)).find((e) => e && unmetReason(e.requires, caps) === null);
+
+  const picks = checkList(
+    registry.map((entry) => ({ id: entry.id, label: entry.label, hint: entry.summary, disabledReason: unmetReason(entry.requires, caps), swatch: seriesVar(SERIES[entry.id]) })),
+    (s) => {
+      selected.clear();
+      s.forEach((id) => selected.add(id));
       syncButtons();
-    });
-    if (reason === null) {
-      input.checked = true;
-      selected.add(entry.id);
-    }
-    return el(
-      'div',
-      { className: 'renderer' },
-      el('label', { className: reason ? 'disabled' : '' }, input, ` ${entry.label}`),
-      el('small', { textContent: reason ? `비활성: ${reason}` : entry.summary }),
-    );
+    },
+  );
+  picks.selected().forEach((id) => selected.add(id));
+
+  const sourceSeg = segmented<SourceKind>({
+    label: '소스',
+    options: [
+      { value: 'synthetic', label: '합성 영상' },
+      { value: 'camera', label: '웹캠' },
+    ],
+    value: 'synthetic',
+    onChange: () => {
+      closeSource();
+      syncButtons();
+      restartPreview();
+    },
   });
+  const resSeg = segmented<string>({
+    label: '처리 해상도',
+    options: RESOLUTIONS.map((r, i) => ({ value: String(i), label: `${r.width}×${r.height}` })),
+    value: '0',
+    onChange: () => {
+      refreshOutputs();
+      restartPreview();
+    },
+  });
+  const filterSeg = segmented<FilterId>({
+    label: '필터',
+    options: FILTERS.map((x) => ({ value: x.id, label: x.label.split(' ')[0]! })),
+    value: 'blur',
+    onChange: restartPreview,
+  });
+  const radiusSlider = slider({ label: '블러 반경', min: 1, max: MAX_RADIUS, value: 4 });
+  radiusSlider.input.addEventListener('change', restartPreview);
 
-  const kindSelect = el('select', {}, el('option', { value: 'synthetic', textContent: '합성 영상 (결정적, 카메라 불필요)' }), el('option', { value: 'camera', textContent: '웹캠 (getUserMedia)' }));
-  const cameraBtn = el('button', { textContent: '카메라 시작' });
-  const resSelect = el('select', {}, ...RESOLUTIONS.map((r, i) => el('option', { value: String(i), textContent: `${r.width}×${r.height}`, selected: i === 1 })));
-  const filterSelect = el('select', {}, ...FILTERS.map((x) => el('option', { value: x.id, textContent: x.label, selected: x.id === 'blur' })));
-  const radiusInput = el('input', { type: 'range', min: '1', max: String(MAX_RADIUS), step: '1', value: '4' });
-  const radiusOut = el('output', { textContent: '4' });
-  radiusInput.addEventListener('input', () => (radiusOut.textContent = radiusInput.value));
-  const runBtn = el('button', { textContent: '고정 설정 실행' });
-  const sweepBtn = el('button', { textContent: '반경 스윕 (블러)' });
-  const maxBtn = el('button', { textContent: '최대 반경 찾기 (블러)' });
-  const verifyBtn = el('button', { textContent: '정합성 검증' });
-  const previewBtn = el('button', { textContent: '미리보기 시작' });
-  const status = el('p', { className: 'status', textContent: '준비됨' });
-  const stage = el('div', { className: 'stage' });
-  const tableHost = el('div', { className: 'table' });
-  const maxHost = el('ul', { className: 'caps' });
-  const chartHost = el('div', { className: 'chart' });
+  const cameraBtn = button({ label: '카메라 켜기', onClick: () => void cameraJob() });
+  const runBtn = button({ label: '고정 설정 실행', variant: 'primary', onClick: () => void runJob() });
+  const sweepBtn = button({ label: '반경 스윕 (블러)', onClick: () => void sweepJob() });
+  const maxBtn = button({ label: '최대 반경 찾기 (블러)', onClick: () => void maxJob() });
+  const verifyBtn = button({ label: '정합성 검증', onClick: () => void verifyJob() });
+  const state = status();
+  const maxList = el('ul', { className: 'max-list' });
+  const verifyList = el('ul', { className: 'max-list' });
+  const table = resultsTable([
+    { label: '변형', numeric: false },
+    { label: '해상도' },
+    { label: '필터' },
+    { label: '반경' },
+    { label: '프레임 간격 중앙값', unit: 'ms' },
+    { label: 'cpu 중앙값', unit: 'ms' },
+    { label: 'gpu 중앙값', unit: 'ms' },
+    { label: '드롭 비율' },
+    { label: '실효 프레임 시간', unit: 'ms' },
+  ]);
+  const plot = chart({
+    title: '블러 반경 대비 실효 프레임 시간',
+    xLabel: '블러 반경',
+    yLabel: '실효 프레임 시간 (ms)',
+    series: registry.map((e) => ({ label: e.label, color: SERIES[e.id] })),
+    emptyText: '아직 측정 결과가 없습니다. 반경 스윕을 실행하면 반경별 비용 곡선이 이 자리에 그려집니다.',
+  });
+  const env = capsPanel(caps, [['주사율(추정)', `${f(refreshHz, 1)} Hz`]]);
 
-  const resolution = () => RESOLUTIONS[Number(resSelect.value)]!;
-  const kind = () => kindSelect.value as SourceKind;
+  const resolution = () => RESOLUTIONS[Number(resSeg.get())]!;
+  const kind = () => sourceSeg.get();
   const variantsSelected = (): VariantEntry[] => registry.filter((e) => selected.has(e.id));
   const syncButtons = () => {
     const noVariant = selected.size === 0;
     runBtn.disabled = sweepBtn.disabled = maxBtn.disabled = busy || noVariant;
-    previewBtn.disabled = noVariant || (busy && !preview);
     verifyBtn.disabled = busy || caps.webgpu.kind !== 'available';
-    cameraBtn.disabled = busy || kind() !== 'camera';
+    cameraBtn.disabled = busy;
     cameraBtn.hidden = kind() !== 'camera';
   };
 
@@ -108,22 +121,10 @@ export function mountWebcamFilter(root: HTMLElement, caps: Capabilities): void {
     source = null;
     sourceSize = '';
   };
-  kindSelect.addEventListener('change', () => {
-    closeSource();
-    syncButtons();
-  });
-
-  const startCamera = async (): Promise<string> => {
-    const { width, height } = resolution();
-    closeSource();
-    source = await openSource('camera', width, height);
-    sourceSize = 'camera';
-    return `카메라 시작됨 (${source.video.videoWidth}×${source.video.videoHeight})`;
-  };
 
   const ensureSource = async (): Promise<VideoSource> => {
     if (kind() === 'camera') {
-      if (!source) throw new CameraError('먼저 "카메라 시작"을 눌러 카메라를 켜세요.');
+      if (!source) throw new CameraError('먼저 "카메라 켜기"를 눌러 카메라를 켜세요.');
       return source;
     }
     const { width, height } = resolution();
@@ -136,45 +137,48 @@ export function mountWebcamFilter(root: HTMLElement, caps: Capabilities): void {
     return source;
   };
 
-  const plot = new uPlot(
-    {
-      width: 800,
-      height: 320,
-      title: '블러 반경 대비 실효 프레임 시간 (ms)',
-      scales: { x: { time: false }, y: { range: (_u, _min, max) => [0, Math.max(20, max * 1.1)] } },
-      axes: [{ label: '블러 반경' }, { label: '실효 프레임 시간 (ms)' }],
-      series: [{}, ...registry.map((e, i) => ({ label: e.label, stroke: SERIES_COLORS[i % SERIES_COLORS.length], width: 2, spanGaps: true, points: { show: true } }))],
+  const config = (radius = radiusSlider.value()): RunConfig => ({ ...resolution(), filter: filterSeg.get(), radius });
+
+  const preview = livePreview(
+    async () => {
+      if (kind() === 'camera' && !source) {
+        fig.setCaption('"카메라 켜기"를 누르면 웹캠 영상이 같은 필터를 거쳐 여기에 나옵니다. 카메라는 누르기 전까지 켜지지 않습니다.');
+        throw new CameraError('camera not started');
+      }
+      const cfg = config();
+      const entry = previewEntry!;
+      const target = await entry.create({ host: stage, source: await ensureSource(), width: cfg.width, height: cfg.height, params: cfg, caps });
+      const what = kind() === 'camera' ? '웹캠 영상' : '합성 영상';
+      fig.setCaption(`${what}을 ${entry.label}로 처리하는 중입니다 (${cfg.width}×${cfg.height}, ${FILTERS.find((x) => x.id === cfg.filter)!.label}). 측정을 시작하면 미리보기는 멈춥니다.`);
+      return target;
     },
-    [[], ...registry.map(() => [])],
-    chartHost,
+    (err) => {
+      if (!(err instanceof CameraError && err.message === 'camera not started')) fig.setCaption(err instanceof CameraError ? err.message : `미리보기를 시작하지 못했습니다: ${String(err)}`);
+    },
   );
+  function restartPreview() {
+    preview.suspend();
+    if (!busy) preview.resume();
+  }
 
   const labelOf = (id: string) => registry.find((e) => e.id === id)?.label ?? id;
   const filterLabel = (id: FilterId) => FILTERS.find((x) => x.id === id)?.label.split(' ')[0] ?? id;
 
-  const refreshOutputs = () => {
-    const header = ['변형', '해상도', '필터', '반경', '프레임 간격 중앙값', 'p95', 'cpu 중앙값', 'gpu 중앙값', '드롭 비율', '실효 프레임 시간'];
-    const rows = results.map((r) => [
-      labelOf(r.variantId),
-      `${r.width}×${r.height}`,
-      filterLabel(r.filter),
-      r.filter === 'blur' ? String(r.radius) : '-',
-      f(r.interval.median),
-      f(r.interval.p95),
-      f(r.cpu.median, 3),
-      r.gpu ? f(r.gpu.median, 3) : '-',
-      f(r.droppedRatio, 3),
-      f(r.effectiveFrameMs),
-    ]);
-    tableHost.replaceChildren(
-      el(
-        'table',
-        {},
-        el('thead', {}, el('tr', {}, ...header.map((h) => el('th', { textContent: h })))),
-        el('tbody', {}, ...rows.map((cells) => el('tr', {}, ...cells.map((c) => el('td', { textContent: c }))))),
-      ),
+  function refreshOutputs() {
+    table.setRows(
+      results.map((r) => [
+        labelOf(r.variantId),
+        `${r.width}×${r.height}`,
+        filterLabel(r.filter),
+        r.filter === 'blur' ? String(r.radius) : '-',
+        f(r.interval.median),
+        f(r.cpu.median, 3),
+        r.gpu ? f(r.gpu.median, 3) : '-',
+        f(r.droppedRatio, 3),
+        f(r.effectiveFrameMs),
+      ]),
     );
-    maxHost.replaceChildren(
+    maxList.replaceChildren(
       ...registry
         .filter((e) => maxRadii.has(e.id))
         .map((e) => {
@@ -186,39 +190,30 @@ export function mountWebcamFilter(root: HTMLElement, caps: Capabilities): void {
     const { width, height } = resolution();
     const blur = results.filter((r) => r.filter === 'blur' && r.width === width && r.height === height);
     const xs = [...new Set(blur.map((r) => r.radius))].sort((a, b) => a - b);
-    plot.setData([
+    plot.setData(
       xs,
-      ...registry.map((e) =>
-        xs.map((x) => {
-          const hits = blur.filter((r) => r.variantId === e.id && r.radius === x);
-          return hits.length ? hits[hits.length - 1]!.effectiveFrameMs : null;
-        }),
-      ),
-    ]);
-  };
+      registry.map((e) => xs.map((x) => blur.findLast((r) => r.variantId === e.id && r.radius === x)?.effectiveFrameMs ?? null)),
+    );
+  }
 
-  const stopPreview = async () => {
-    await preview?.stop();
-    preview = null;
-    previewBtn.textContent = '미리보기 시작';
-  };
-
-  const guarded = (label: string, job: () => Promise<string | void>) => async () => {
-    await stopPreview();
+  const guarded = async (label: string, job: () => Promise<string | void>) => {
     busy = true;
+    preview.suspend();
+    stage.replaceChildren();
+    fig.setCaption('측정 중에는 미리보기를 멈춥니다. 같은 영역에 측정 대상 영상이 그려집니다.');
     syncButtons();
     try {
-      status.textContent = (await job()) ?? `${label} 완료`;
+      state.set((await job()) ?? `${label} 완료`, 'ok');
     } catch (err) {
-      status.textContent = err instanceof CameraError ? err.message : `${label} 실패: ${String(err)}`;
+      state.set(err instanceof CameraError ? err.message : `${label} 실패: ${String(err)}`, 'error');
     } finally {
       stage.replaceChildren();
       busy = false;
       syncButtons();
+      preview.resume();
     }
   };
 
-  const config = (radius = Number(radiusInput.value)): RunConfig => ({ ...resolution(), filter: filterSelect.value as FilterId, radius });
   const measure = async (entry: VariantEntry, cfg: RunConfig) => {
     const r = await runVariant(entry, cfg, await ensureSource(), caps, refreshHz, { host: stage });
     results.push(r);
@@ -226,41 +221,43 @@ export function mountWebcamFilter(root: HTMLElement, caps: Capabilities): void {
     return r;
   };
 
-  cameraBtn.addEventListener('click', guarded('카메라 시작', startCamera));
+  const cameraJob = () =>
+    guarded('카메라 켜기', async () => {
+      const { width, height } = resolution();
+      closeSource();
+      source = await openSource('camera', width, height);
+      sourceSize = 'camera';
+      return `카메라 시작됨 (${source.video.videoWidth}×${source.video.videoHeight})`;
+    });
 
-  runBtn.addEventListener(
-    'click',
+  const runJob = () =>
     guarded('고정 설정 실행', async () => {
       const cfg = config();
       for (const entry of variantsSelected()) {
-        status.textContent = `${entry.label} 측정 중`;
+        state.set(`${entry.label} 측정 중`);
         await measure(entry, cfg);
       }
-    }),
-  );
+    });
 
-  sweepBtn.addEventListener(
-    'click',
+  const sweepJob = () =>
     guarded('반경 스윕', async () => {
       for (const entry of variantsSelected()) {
         for (const radius of SWEEP_RADII) {
-          status.textContent = `${entry.label} 측정 중 (반경 ${radius})`;
+          state.set(`${entry.label} 측정 중 (반경 ${radius})`);
           await measure(entry, { ...config(radius), filter: 'blur' });
         }
       }
-    }),
-  );
+    });
 
-  maxBtn.addEventListener(
-    'click',
+  const maxJob = () =>
     guarded('최대 반경 찾기', async () => {
-      const source = await ensureSource();
+      const src = await ensureSource();
       for (const entry of variantsSelected()) {
         const { width, height } = resolution();
-        const max = await findMaxRadius(entry, { width, height }, source, caps, refreshHz, {
+        const max = await findMaxRadius(entry, { width, height }, src, caps, refreshHz, {
           host: stage,
           onTrial: (r) => {
-            status.textContent = `${entry.label} 탐색 중 (반경 ${r.radius})`;
+            state.set(`${entry.label} 탐색 중 (반경 ${r.radius})`);
             results.push(r);
             refreshOutputs();
           },
@@ -268,95 +265,49 @@ export function mountWebcamFilter(root: HTMLElement, caps: Capabilities): void {
         maxRadii.set(entry.id, max);
         refreshOutputs();
       }
-    }),
-  );
+    });
 
-  verifyBtn.addEventListener(
-    'click',
+  const verifyJob = () =>
     guarded('정합성 검증', async () => {
       const r = await verifyParity(caps);
-      const parts = r.cases.map((c) => `${c.filter}${c.filter === 'blur' ? ` r=${c.radius}` : ''} 최대 ${c.maxAbsDiff} 평균 ${f(c.meanAbsDiff, 4)}`);
-      return `정합성 검증 ${r.pass ? '통과' : '실패'} (${r.width}×${r.height}, 허용 최대 ${r.maxTolerance} 평균 ${r.meanTolerance}): ${parts.join(' / ')}`;
-    }),
-  );
-
-  previewBtn.addEventListener('click', async () => {
-    if (preview) {
-      await stopPreview();
-      syncButtons();
-      return;
-    }
-    const entry = variantsSelected()[0];
-    if (!entry) return;
-    busy = true;
-    syncButtons();
-    try {
-      const cfg = config();
-      const target = await entry.create({ host: stage, source: await ensureSource(), width: cfg.width, height: cfg.height, params: cfg, caps });
-      let raf = 0;
-      const loop = () => {
-        target.frame();
-        raf = requestAnimationFrame(loop);
-      };
-      loop();
-      preview = {
-        async stop() {
-          cancelAnimationFrame(raf);
-          await target.settle?.();
-          target.dispose();
-          stage.replaceChildren();
-        },
-      };
-      previewBtn.textContent = '미리보기 중지';
-      status.textContent = `${entry.label} 미리보기 중`;
-    } catch (err) {
-      status.textContent = err instanceof CameraError ? err.message : `미리보기 실패: ${String(err)}`;
-    } finally {
-      busy = false;
-      syncButtons();
-    }
-  });
-
-  resSelect.addEventListener('change', refreshOutputs);
-
-  const style = el('style', {
-    textContent: '.wf-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr)); gap: 8px 16px; margin: 0.5rem 0; } .wf-grid label { display: flex; flex-direction: column; gap: 2px; } .wf-grid input[type=range] { width: 100%; }',
-  });
+      verifyList.replaceChildren(
+        ...r.cases.map((c) => el('li', { textContent: `${c.filter}${c.filter === 'blur' ? ` r=${c.radius}` : ''}: 최대 ${c.maxAbsDiff}, 평균 ${f(c.meanAbsDiff, 4)}` })),
+      );
+      return `정합성 검증 ${r.pass ? '통과' : '실패'} (${r.width}×${r.height}, 허용 최대 ${r.maxTolerance}, 평균 ${r.meanTolerance})`;
+    });
 
   root.replaceChildren(
-    style,
-    el('h1', { textContent: 'WebGPU 웹캠 필터: 블러와 엣지 검출' }),
-    el('p', { textContent: '같은 비디오 소스에 같은 필터를 CPU(Canvas2D getImageData + JS 루프)와 WebGPU 컴퓨트로 적용해 결과 이미지를 맞추고 비용을 비교합니다.' }),
-    el('details', {}, el('summary', { textContent: '이 데모가 보여 주는 것' }), el('ul', {}, ...EXPLAINER.map((t) => el('li', { textContent: t })))),
-    el('h2', { textContent: '환경' }),
-    capsList,
-    el('h2', { textContent: '변형' }),
-    ...variantBoxes,
-    el('h2', { textContent: '설정' }),
-    el(
-      'div',
-      { className: 'wf-grid' },
-      el('label', {}, '소스', kindSelect),
-      el('label', {}, '처리 해상도', resSelect),
-      el('label', {}, '필터', filterSelect),
-      el('label', {}, el('span', {}, '블러 반경 ', radiusOut), radiusInput),
+    page(
+      {
+        title: '카메라 영상에 필터를 거는 가장 빠른 길',
+        lede: '같은 영상에 같은 필터를 CPU(Canvas2D와 JS 루프)와 WebGPU 컴퓨트로 걸어, 결과 이미지를 맞춘 뒤 비용을 비교합니다.',
+        chapter: CHAPTER,
+      },
+      fig.el,
+      section(
+        { title: '무엇을 비교하나' },
+        el('p', { textContent: '화면의 영상은 합성 영상이 WebGPU 필터를 통과한 것입니다. 아래에서 필터와 반경을 바꾸면 미리보기가 바로 따라 바뀝니다. 웹캠은 "웹캠"을 고르고 "카메라 켜기"를 누를 때만 켜집니다.' }),
+        picks.el,
+        callout('핵심', 'importExternalTexture는 비디오 프레임을 복사 없이 GPU에 바인딩합니다. 대신 한 프레임 동안만 유효해서 프레임마다 새로 만듭니다. CPU 경로는 getImageData로 프레임을 CPU 메모리로 읽어 오는 동기 readback이 병목입니다.'),
+      ),
+      section(
+        { title: '직접 측정하기' },
+        controls(sourceSeg.el, resSeg.el, filterSeg.el, radiusSlider.el, cameraBtn),
+        controls(runBtn, sweepBtn, maxBtn, verifyBtn),
+        state.el,
+      ),
+      section({ title: '결과' }, maxList, table.el, plot.el, verifyList, env.el),
+      callout('측정 한계', [el('ul', {}, ...LIMITS_NOTES.map((t) => el('li', { textContent: t })))]),
+      callout('해보기', '필터를 블러로 두고 반경 스윕을 실행해 보세요. 반경이 커질수록 CPU의 실효 프레임 시간은 가파르게 오르는데 GPU는 얼마나 평평한지 확인합니다. 웹캠이 있다면 같은 설정을 카메라로 반복해 보세요.'),
     ),
-    el('div', { className: 'controls' }, cameraBtn, runBtn, sweepBtn, maxBtn, verifyBtn, previewBtn),
-    status,
-    stage,
-    el('h2', { textContent: '결과' }),
-    maxHost,
-    tableHost,
-    chartHost,
-    el('h2', { textContent: '측정 한계' }),
-    el('ul', {}, ...LIMITS_NOTES.map((t) => el('li', { textContent: t }))),
   );
 
-  renderCaps();
-  refreshOutputs();
   syncButtons();
-  estimateRefresh().then((hz) => {
+  void estimateRefresh().then((hz) => {
     refreshHz = hz;
-    renderCaps();
+    env.update([['주사율(추정)', `${f(hz, 1)} Hz`]]);
   });
+  if (previewEntry) void preview.start();
+  else fig.setCaption('이 환경에서는 미리보기를 그릴 수 있는 변형이 없습니다.');
+  return { suspendPreview: preview.suspend, resumePreview: preview.resume };
 }

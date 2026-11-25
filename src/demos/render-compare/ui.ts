@@ -1,180 +1,158 @@
-import uPlot from 'uplot';
-import 'uplot/dist/uPlot.min.css';
-import { estimateRefresh, rampMaxN, trialPasses } from '../../core/frame-bench';
 import { unmetReason, type Capabilities } from '../../core/capabilities';
+import { estimateRefresh, rampMaxN, trialPasses } from '../../core/frame-bench';
+import { button, callout, capsPanel, chapterLink, chart, checkList, controls, el, figure, livePreview, numberField, page, resultsTable, section, seriesVar, status, type SeriesToken } from '../../ui';
 import { registry } from './renderers/registry';
+import type { RendererEntry, RendererId } from './renderers/types';
 import { runFixed, type RunResult } from './run';
-import type { RendererEntry } from './renderers/types';
-import type { SceneConfig } from './scene';
+import { createScene, type SceneConfig } from './scene';
 import { verifyComputeParity } from './verify';
 
 const SCENE_SIZE = { width: 800, height: 600 };
-const SERIES_COLORS = ['#e4572e', '#17bebb', '#ffc914', '#76b041', '#7b5ea7'];
+const PREVIEW_COUNT = 1200;
+const PREVIEW_ORDER: RendererId[] = ['webgpu-compute', 'webgpu-cpu', 'webgl2', 'canvas2d', 'svg'];
+const CHAPTER = '02-render-pipeline';
+
+const SERIES: Record<RendererId, SeriesToken> = {
+  svg: 'cpu-a',
+  canvas2d: 'cpu-b',
+  webgl2: 'gpu-a',
+  'webgpu-cpu': 'gpu-b',
+  'webgpu-compute': 'gpu-c',
+};
 
 const LIMITS_NOTES = [
   'rAF는 화면 주사율에서 멈추므로 헤드라인 지표는 fps가 아니라 "주사율에서 유지되는 최대 N"입니다.',
-  'SVG 비용은 대부분 JS 밖(스타일/레이아웃/페인트)에서 발생하므로 cpuMs는 과소 측정됩니다. 프레임 간격과 LoAF가 이를 반영합니다.',
-  'WebGPU의 cpuMs는 인코딩 + 제출 시간만 의미합니다. GPU 작업은 gpuMs에 나타나고, GPU 병목일 때는 프레임 간격에도 나타납니다.',
+  'SVG 비용은 대부분 JS 밖(스타일, 레이아웃, 페인트)에서 발생하므로 cpuMs는 과소 측정됩니다. 프레임 간격과 LoAF가 이를 반영합니다.',
+  'WebGPU의 cpuMs는 인코딩과 제출 시간만 뜻합니다. GPU 작업은 gpuMs에 나타나고, GPU가 병목이면 프레임 간격에도 나타납니다.',
   'WebGPU 제출은 rAF가 늦춰 주지 않아 작업이 큐에 쌓일 수 있습니다. 그래서 측정 구간 끝에서 큐를 비운 뒤(settle) 실효 프레임 시간으로 통과 여부를 판정합니다.',
   'Chrome은 WebGPU Developer Features 플래그가 꺼져 있으면 timestamp-query를 약 100 µs 단위로 양자화합니다.',
 ];
 
-function el<K extends keyof HTMLElementTagNameMap>(tag: K, props: Partial<HTMLElementTagNameMap[K]> = {}, ...children: (Node | string)[]): HTMLElementTagNameMap[K] {
-  const node = Object.assign(document.createElement(tag), props);
-  node.append(...children);
-  return node;
-}
-
 const f = (x: number, d = 2) => x.toFixed(d);
 
-export function mountRenderCompare(root: HTMLElement, caps: Capabilities): void {
+export function mountRenderCompare(root: HTMLElement, caps: Capabilities): { suspendPreview(): void; resumePreview(): void } {
   const selected = new Set<string>();
   const results: RunResult[] = [];
   const maxNs = new Map<string, number>();
   let refreshHz = 60;
   let busy = false;
 
-  const capsList = el('ul', { className: 'caps' });
-  const renderCaps = () => {
-    const gpu = caps.webgpu;
-    capsList.replaceChildren(
-      el('li', { textContent: `WebGPU: ${gpu.kind === 'available' ? `사용 가능 (${gpu.adapterInfo})` : `사용 불가 (${gpu.reason})`}` }),
-      el('li', { textContent: `timestamp-query: ${gpu.kind === 'available' && gpu.timestampQuery ? '지원' : '미지원'}` }),
-      el('li', { textContent: `WebGL2: ${caps.webgl2 ? '지원' : '미지원'}` }),
-      el('li', { textContent: `Long Animation Frames: ${caps.longAnimationFrames ? '지원' : '미지원'}` }),
-      el('li', { textContent: `주사율(추정): ${f(refreshHz, 1)} Hz · DPR ${caps.dpr}` }),
-    );
-  };
+  const fig = figure({ caption: '미리보기를 준비하는 중입니다.', width: SCENE_SIZE.width, height: SCENE_SIZE.height });
+  const stage = fig.stage;
 
-  const rendererBoxes = registry.map((entry) => {
-    const reason = unmetReason(entry.requires, caps);
-    const input = el('input', { type: 'checkbox', disabled: reason !== null });
-    input.addEventListener('change', () => {
-      if (input.checked) selected.add(entry.id);
-      else selected.delete(entry.id);
+  const previewEntry = PREVIEW_ORDER.map((id) => registry.find((e) => e.id === id)).find((e) => e && unmetReason(e.requires, caps) === null);
+  const preview = livePreview(
+    async () => {
+      const width = Math.min(SCENE_SIZE.width, Math.max(280, Math.round(stage.clientWidth)));
+      const config: SceneConfig = { seed: 1, count: PREVIEW_COUNT, width, height: Math.round((width * SCENE_SIZE.height) / SCENE_SIZE.width) };
+      fig.setCaption(`${previewEntry!.label}로 원 ${PREVIEW_COUNT.toLocaleString('ko-KR')}개를 그리는 중입니다. 측정을 시작하면 미리보기는 멈춥니다.`);
+      return previewEntry!.create(stage, createScene(config), caps);
+    },
+    (err) => fig.setCaption(`미리보기를 시작하지 못했습니다: ${String(err)}`),
+  );
+
+  const picks = checkList(
+    registry.map((entry) => ({ id: entry.id, label: entry.label, hint: entry.summary, disabledReason: unmetReason(entry.requires, caps), swatch: seriesVar(SERIES[entry.id]) })),
+    (s) => {
+      selected.clear();
+      s.forEach((id) => selected.add(id));
       syncButtons();
-    });
-    if (reason === null) {
-      input.checked = true;
-      selected.add(entry.id);
-    }
-    const label = el('label', { className: reason ? 'disabled' : '' }, input, ` ${entry.label}`);
-    const note = el('small', { textContent: reason ? `비활성: ${reason}` : entry.summary });
-    return el('div', { className: 'renderer' }, label, note);
-  });
+    },
+  );
+  picks.selected().forEach((id) => selected.add(id));
 
-  const countInput = el('input', { type: 'number', min: '1', step: '1000', value: '5000' });
-  const runBtn = el('button', { textContent: '고정 N 실행' });
-  const rampBtn = el('button', { textContent: '최대 N 찾기' });
-  const verifyBtn = el('button', { textContent: '컴퓨트 검증' });
-  const status = el('p', { className: 'status', textContent: '준비됨' });
-  const stage = el('div', { className: 'stage' });
-  stage.style.width = `${SCENE_SIZE.width}px`;
-  stage.style.height = `${SCENE_SIZE.height}px`;
-  const tableHost = el('div', { className: 'table' });
-  const maxHost = el('ul', { className: 'caps' });
-  const chartHost = el('div', { className: 'chart' });
+  const countField = numberField({ label: '원 개수 N', value: 5000, min: 1, step: 1000 });
+  const runBtn = button({ label: '고정 N 실행', variant: 'primary', onClick: () => void runFixedJob() });
+  const rampBtn = button({ label: '최대 N 찾기', onClick: () => void rampJob() });
+  const verifyBtn = button({ label: '컴퓨트 검증', onClick: () => void verifyJob() });
+  const state = status();
+
+  const table = resultsTable([
+    { label: '렌더러', numeric: false },
+    { label: 'N' },
+    { label: '프레임 간격 중앙값', unit: 'ms' },
+    { label: 'p95', unit: 'ms' },
+    { label: 'cpu 중앙값', unit: 'ms' },
+    { label: 'gpu 중앙값', unit: 'ms' },
+    { label: '드롭 비율' },
+    { label: '실효 프레임 시간', unit: 'ms' },
+    { label: 'LoAF', unit: '횟수 / 차단 ms' },
+  ]);
+  const maxList = el('ul', { className: 'max-list' });
+  const plot = chart({
+    title: 'N에 따른 프레임 간격 중앙값',
+    xLabel: '원 개수 N (로그)',
+    yLabel: '프레임 간격 (ms)',
+    logX: true,
+    series: registry.map((e) => ({ label: e.label, color: SERIES[e.id] })),
+  });
+  const env = capsPanel(caps, [['주사율(추정)', `${f(refreshHz, 1)} Hz`]]);
 
   const entriesSelected = (): RendererEntry[] => registry.filter((e) => selected.has(e.id));
   const syncButtons = () => {
-    const disabled = busy || selected.size === 0;
-    runBtn.disabled = disabled;
-    rampBtn.disabled = disabled;
+    runBtn.disabled = rampBtn.disabled = busy || selected.size === 0;
     verifyBtn.disabled = busy || caps.webgpu.kind !== 'available';
   };
 
-  const sceneFor = (count: number): SceneConfig => ({ seed: 1, count, ...SCENE_SIZE });
-
-  const plot = new uPlot(
-    {
-      width: 800,
-      height: 320,
-      title: 'N 대비 프레임 간격 중앙값 (ms)',
-      scales: { x: { distr: 3, time: false }, y: { range: (_u, _min, max) => [0, Math.max(20, max * 1.1)] } },
-      axes: [{ label: '원 개수 N' }, { label: '프레임 간격 중앙값 (ms)' }],
-      series: [
-        {},
-        ...registry.map((e, i) => ({
-          label: e.label,
-          stroke: SERIES_COLORS[i % SERIES_COLORS.length],
-          width: 2,
-          spanGaps: true,
-          points: { show: true },
-        })),
-      ],
-    },
-    [[], ...registry.map(() => [])],
-    chartHost,
-  );
-
   const refreshOutputs = () => {
-    const header = ['렌더러', 'N', '프레임 간격 중앙값', 'p95', 'cpu 중앙값', 'gpu 중앙값', '드롭 비율', '실효 프레임 시간', 'LoAF(횟수/차단ms)'];
-    const rows = results.map((r) => [
-      registry.find((e) => e.id === r.rendererId)?.label ?? r.rendererId,
-      String(r.count),
-      f(r.interval.median),
-      f(r.interval.p95),
-      f(r.cpu.median, 3),
-      r.gpu ? f(r.gpu.median, 3) : '-',
-      f(r.droppedRatio, 3),
-      f(r.effectiveFrameMs),
-      r.longFrames ? `${r.longFrames.count} / ${f(r.longFrames.totalBlockingMs, 1)}` : '-',
-    ]);
-    tableHost.replaceChildren(
-      el(
-        'table',
-        {},
-        el('thead', {}, el('tr', {}, ...header.map((h) => el('th', { textContent: h })))),
-        el('tbody', {}, ...rows.map((cells) => el('tr', {}, ...cells.map((c) => el('td', { textContent: c }))))),
-      ),
+    table.setRows(
+      results.map((r) => [
+        registry.find((e) => e.id === r.rendererId)?.label ?? r.rendererId,
+        r.count.toLocaleString('en-US'),
+        f(r.interval.median),
+        f(r.interval.p95),
+        f(r.cpu.median, 3),
+        r.gpu ? f(r.gpu.median, 3) : '-',
+        f(r.droppedRatio, 3),
+        f(r.effectiveFrameMs),
+        r.longFrames ? `${r.longFrames.count} / ${f(r.longFrames.totalBlockingMs, 1)}` : '-',
+      ]),
     );
-    maxHost.replaceChildren(
-      ...registry.filter((e) => maxNs.has(e.id)).map((e) => el('li', { textContent: `${e.label}: ${f(refreshHz, 0)} Hz 유지 최대 N ≈ ${maxNs.get(e.id)}` })),
+    maxList.replaceChildren(
+      ...registry.filter((e) => maxNs.has(e.id)).map((e) => el('li', {}, `${e.label}: ${f(refreshHz, 0)} Hz 유지 최대 N ≈ `, el('strong', { textContent: maxNs.get(e.id)!.toLocaleString('en-US') }))),
     );
     const xs = [...new Set(results.map((r) => r.count))].sort((a, b) => a - b);
-    const series = registry.map((e) =>
-      xs.map((x) => {
-        const hits = results.filter((r) => r.rendererId === e.id && r.count === x);
-        return hits.length ? hits[hits.length - 1]!.interval.median : null;
-      }),
+    plot.setData(
+      xs,
+      registry.map((e) => xs.map((x) => results.findLast((r) => r.rendererId === e.id && r.count === x)?.interval.median ?? null)),
     );
-    plot.setData([xs, ...series]);
   };
 
-  const guarded = (label: string, job: () => Promise<string | void>) => async () => {
+  const guarded = async (label: string, job: () => Promise<string | void>) => {
     busy = true;
+    preview.suspend();
+    stage.replaceChildren();
+    fig.setCaption('측정 중에는 미리보기를 멈춥니다. 같은 영역에 측정 대상 장면이 그려집니다.');
     syncButtons();
     try {
-      status.textContent = (await job()) ?? `${label} 완료`;
+      state.set((await job()) ?? `${label} 완료`, 'ok');
     } catch (err) {
-      status.textContent = `${label} 실패: ${String(err)}`;
+      state.set(`${label} 실패: ${String(err)}`, 'error');
     } finally {
       stage.replaceChildren();
       busy = false;
       syncButtons();
+      preview.resume();
     }
   };
 
-  const measure = (entry: RendererEntry, count: number) => runFixed(entry, sceneFor(count), caps, refreshHz, { host: stage });
+  const measure = (entry: RendererEntry, count: number) => runFixed(entry, { seed: 1, count, ...SCENE_SIZE }, caps, refreshHz, { host: stage });
 
-  runBtn.addEventListener(
-    'click',
+  const runFixedJob = () =>
     guarded('고정 N 실행', async () => {
-      const count = Math.max(1, Math.floor(Number(countInput.value)));
+      const count = countField.read();
       for (const entry of entriesSelected()) {
-        status.textContent = `${entry.label} 측정 중 (N=${count})`;
+        state.set(`${entry.label} 측정 중 (N=${count})`);
         results.push(await measure(entry, count));
         refreshOutputs();
       }
-    }),
-  );
+    });
 
-  rampBtn.addEventListener(
-    'click',
+  const rampJob = () =>
     guarded('최대 N 찾기', async () => {
       for (const entry of entriesSelected()) {
         const { maxN } = await rampMaxN(async (n) => {
-          status.textContent = `${entry.label} 탐색 중 (N=${n})`;
+          state.set(`${entry.label} 탐색 중 (N=${n})`);
           const r = await measure(entry, n);
           results.push(r);
           refreshOutputs();
@@ -183,40 +161,46 @@ export function mountRenderCompare(root: HTMLElement, caps: Capabilities): void 
         maxNs.set(entry.id, maxN);
         refreshOutputs();
       }
-    }),
-  );
+    });
 
-  verifyBtn.addEventListener(
-    'click',
+  const verifyJob = () =>
     guarded('컴퓨트 검증', async () => {
       const r = await verifyComputeParity(caps);
       return `컴퓨트 검증 ${r.pass ? '통과' : '실패'}: 최대 절대 오차 ${r.maxAbsError.toExponential(2)} (원 ${r.count}개, ${r.steps}스텝)`;
-    }),
-  );
+    });
 
   root.replaceChildren(
-    el('h1', { textContent: 'WebGPU 렌더링 비교: 튀는 원 장면' }),
-    el('p', { textContent: '같은 장면(같은 시드, 고정 dt)을 SVG, Canvas2D, WebGL2, WebGPU(CPU 시뮬레이션), WebGPU(컴퓨트 시뮬레이션)로 그려 비교합니다.' }),
-    el('h2', { textContent: '환경' }),
-    capsList,
-    el('h2', { textContent: '렌더러' }),
-    ...rendererBoxes,
-    el('div', { className: 'controls' }, el('label', {}, '원 개수 N ', countInput), runBtn, rampBtn, verifyBtn),
-    status,
-    stage,
-    el('h2', { textContent: '결과' }),
-    maxHost,
-    tableHost,
-    chartHost,
-    el('h2', { textContent: '측정 한계' }),
-    el('ul', {}, ...LIMITS_NOTES.map((t) => el('li', { textContent: t }))),
+    page(
+      {
+        title: '튀는 원, 누가 주사율을 지킬까',
+        lede: '같은 장면을 SVG, Canvas2D, WebGL2, WebGPU로 그려, 화면 주사율을 유지하는 최대 원 개수를 비교합니다.',
+        chapter: CHAPTER,
+      },
+      fig.el,
+      section(
+        { title: '무엇을 비교하나' },
+        el('p', { textContent: '장면은 모두 같습니다. 같은 시드, 같은 고정 시간 간격(1/60초), 같은 색과 알파 블렌딩으로 원이 벽에 튕깁니다. 다른 것은 "누가 위치를 계산하고 누가 그리느냐"입니다.' }),
+        picks.el,
+      ),
+      section(
+        { title: '직접 측정하기' },
+        el('p', { textContent: 'N을 정하고 고정 N 실행을 누르면 선택한 방식이 차례로 측정됩니다. 최대 N 찾기는 각 방식이 주사율을 유지하는 한계를 이분 탐색으로 찾습니다.' }),
+        controls(countField.el, runBtn, rampBtn, verifyBtn),
+        state.el,
+      ),
+      section({ title: '결과' }, maxList, table.el, plot.el, env.el),
+      callout('측정 한계', [el('ul', {}, ...LIMITS_NOTES.map((t) => el('li', { textContent: t })))]),
+      callout('해보기', 'N을 20000으로 올려 SVG와 WebGPU(컴퓨트)를 함께 실행해 보세요. 두 방식의 프레임 간격이 어느 N에서 갈라지는지, 그 차이가 cpu 중앙값에도 나타나는지 확인합니다.'),
+      el('p', {}, chapterLink(CHAPTER)),
+    ),
   );
 
-  renderCaps();
-  refreshOutputs();
   syncButtons();
-  estimateRefresh().then((hz) => {
+  void estimateRefresh().then((hz) => {
     refreshHz = hz;
-    renderCaps();
+    env.update([['주사율(추정)', `${f(hz, 1)} Hz`]]);
   });
+  if (previewEntry) void preview.start();
+  else fig.setCaption('이 환경에서는 미리보기를 그릴 수 있는 렌더러가 없습니다.');
+  return { suspendPreview: preview.suspend, resumePreview: preview.resume };
 }

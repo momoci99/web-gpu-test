@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-50 0 610 300" width="610" height="300" font-family="system-ui, sans-serif" font-size="13" fill="none" stroke="currentColor" stroke-width="1.5">
+  <!-- quad from (-1,-1) to (1,1), drawn at 200px side, origin at (150,150); y grows downward in pixel space -->
+  <rect x="50" y="50" width="200" height="200"/>
+  <line x1="50" y1="50" x2="250" y2="250" stroke-dasharray="5 4"/>
+  <circle cx="150" cy="150" r="88" stroke-width="2"/>
+  <circle cx="150" cy="150" r="2.5" fill="currentColor" stroke="none"/>
+  <line x1="150" y1="150" x2="238" y2="150" stroke-width="1"/>
+  <text x="194" y="143" text-anchor="middle" fill="currentColor" stroke="none" font-size="12">r</text>
+  <line x1="238" y1="150" x2="250" y2="150" stroke-width="1"/>
+  <text x="262" y="166" fill="currentColor" stroke="none" font-size="12">+1 px</text>
+  <text x="44" y="268" text-anchor="end" fill="currentColor" stroke="none" font-family="ui-monospace, monospace" font-size="12">(-1,-1)</text>
+  <text x="256" y="268" fill="currentColor" stroke="none" font-family="ui-monospace, monospace" font-size="12">(1,-1)</text>
+  <text x="44" y="44" text-anchor="end" fill="currentColor" stroke="none" font-family="ui-monospace, monospace" font-size="12">(-1,1)</text>
+  <text x="256" y="44" fill="currentColor" stroke="none" font-family="ui-monospace, monospace" font-size="12">(1,1)</text>
+  <text x="66" y="240" text-anchor="middle" fill="currentColor" stroke="none" font-weight="600">A</text>
+  <text x="234" y="70" text-anchor="middle" fill="currentColor" stroke="none" font-weight="600">B</text>
+  <text x="330" y="70" fill="currentColor" stroke="none" font-weight="600">인스턴스 하나 = 사각형 하나</text>
+  <text x="330" y="98" fill="currentColor" stroke="none" font-size="12">꼭짓점 6개(삼각형 2개)로 사각형을 만듭니다.</text>
+  <text x="330" y="160" fill="currentColor" stroke="none" font-size="12">삼각형 A = vi 0, 1, 2 · 삼각형 B = vi 3, 4, 5</text>
+  <text x="330" y="120" fill="currentColor" stroke="none" font-size="12">각 꼭짓점 = CORNERS[vi] × (r + 1)</text>
+  <text x="330" y="142" fill="currentColor" stroke="none" font-size="12">사각형 중심 = state[ii].xy</text>
+  <text x="330" y="190" fill="currentColor" stroke="none" font-size="12">프래그먼트 셰이더가 중심에서의 거리로</text>
+  <text x="330" y="208" fill="currentColor" stroke="none" font-size="12">원 밖 픽셀을 버리고(discard),</text>
+  <text x="330" y="226" fill="currentColor" stroke="none" font-size="12">경계 1 px는 부분 투명하게 칠합니다.</text>
+  <text x="330" y="250" fill="currentColor" stroke="none" font-size="12">좌표는 원 중심 기준의 픽셀 단위</text>
+  <text x="330" y="268" fill="currentColor" stroke="none" font-size="12">(그림은 수학 좌표처럼 y가 위로 향함)</text>
+</svg>

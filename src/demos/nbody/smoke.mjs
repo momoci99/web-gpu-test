@@ -25,6 +25,10 @@ export default async function smoke({ page, caps, fail, log }) {
   };
 
   log(`caps: ${JSON.stringify(caps)}`);
+  if (caps.webgpu.kind === 'available') {
+    await page.waitForFunction(() => document.querySelector('.stage canvas'), undefined, { timeout: 15_000 }).catch(() => fail('UI: preview canvas never appeared'));
+  }
+  await page.evaluate(() => window.__demo.suspendPreview());
   const refreshHz = await page.evaluate(() => window.__demo.estimateRefresh());
   const ids = await page.evaluate(() => window.__demo.registry.map((e) => e.id));
   const rows = [];
@@ -75,12 +79,12 @@ export default async function smoke({ page, caps, fail, log }) {
   if (enabled > 0) {
     await page.locator('input[type=number]').first().fill(String(COUNT));
     await page.getByRole('button', { name: '고정 N 실행' }).click();
-    await page.waitForFunction((n) => document.querySelectorAll('.table tbody tr').length >= n, enabled, { timeout: 120_000 });
-    const uiRows = await page.locator('.table tbody tr').count();
+    await page.waitForFunction((n) => document.querySelectorAll('table.results tbody tr').length >= n, enabled, { timeout: 120_000 });
+    const uiRows = await page.locator('table.results tbody tr').count();
     const uiStatus = await page.locator('.status').textContent();
     if (uiRows !== enabled) fail(`UI: expected ${enabled} result rows, got ${uiRows}`);
     if (!uiStatus?.includes('완료')) fail(`UI: status after run was "${uiStatus}"`);
-    if ((await page.locator('.chart canvas').count()) === 0) fail('UI: no uPlot canvas rendered');
+    if ((await page.locator('.chart-box canvas').count()) === 0) fail('UI: no uPlot canvas rendered');
     log(`UI: ${uiRows} result rows, status "${uiStatus}"`);
     await page.getByRole('button', { name: '정확도 검증' }).click();
     await page.waitForFunction(() => document.querySelector('.status')?.textContent?.includes('정확도 검증 '));
