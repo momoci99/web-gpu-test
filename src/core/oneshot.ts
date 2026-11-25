@@ -153,11 +153,15 @@ export interface OneShotEnv {
   device: GPUDevice | null;
 }
 
-const CALIBRATE_MS = 1;
-const MAX_BATCH = 4096;
+const CALIBRATE_MS = 2;
+const MAX_BATCH = 1 << 20;
 
-/** performance.now() is quantized (about 0.1 ms), so a CPU run is timed as a batch of `batch` runs averaged. */
+/**
+ * performance.now() is quantized (about 0.1 ms), so a CPU run is timed as a batch of `batch` runs averaged.
+ * One untimed run first: a cold first call (JIT, allocation) would otherwise end calibration at batch 1.
+ */
 function calibrateBatch<I, O>(impl: CpuImpl<I, O>, input: I): number {
+  impl.run(input);
   let batch = 1;
   for (;;) {
     const t0 = performance.now();

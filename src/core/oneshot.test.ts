@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import {
   crossoverN,
   implApplies,
@@ -219,5 +219,31 @@ describe('crossoverN', () => {
   it('is null without both kinds', () => {
     expect(crossoverN([result('gpu', 10, 1)])).toBeNull();
     expect(crossoverN([])).toBeNull();
+  });
+});
+
+describe('runOneShot CPU timing under a quantized clock', () => {
+  it('reports a non-zero median when only the first call is slow', async () => {
+    const realNow = performance.now.bind(performance);
+    const spy = vi.spyOn(performance, 'now').mockImplementation(() => Math.floor(realNow() / 0.1) * 0.1);
+    try {
+      let calls = 0;
+      const impl: CpuImpl<number, Out> = {
+        kind: 'cpu',
+        id: 'cold-then-fast',
+        label: 'cold',
+        run: (x) => {
+          if (calls++ === 0) {
+            const until = realNow() + 3;
+            while (realNow() < until);
+          }
+          return x * 2;
+        },
+      };
+      const r = await runOneShot(workload([impl]), impl, 1, 1, { device: null });
+      expect(r.e2e.median).toBeGreaterThan(0);
+    } finally {
+      spy.mockRestore();
+    }
   });
 });
