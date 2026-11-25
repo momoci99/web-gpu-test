@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 290" width="720" height="290" role="img" aria-label="cpu-js는 매 프레임 상태를 GPU로 올리고, GPU 변형은 명령만 보내며 상태는 GPU에 머무는 그림">
+  <style>
+    text { font-family: sans-serif; font-size: 13px; fill: currentColor; }
+    .s { font-size: 11px; }
+    .h { font-weight: bold; }
+    .box { fill: currentColor; fill-opacity: 0.06; stroke: currentColor; stroke-width: 1.5; }
+    .ln { stroke: currentColor; stroke-width: 1.5; fill: none; }
+    .dash { stroke-dasharray: 5 4; }
+  </style>
+  <defs>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
+    </marker>
+  </defs>
+
+  <text class="h" x="110" y="22" text-anchor="middle">CPU (JS 메인 스레드)</text>
+  <text class="h" x="520" y="22" text-anchor="middle">GPU</text>
+  <line class="ln dash" x1="215" y1="10" x2="215" y2="280"/>
+
+  <!-- lane 1: cpu-js -->
+  <text class="h" x="10" y="52">cpu-js</text>
+  <rect class="box" x="20" y="62" width="180" height="46" rx="6"/>
+  <text x="110" y="82" text-anchor="middle">stepCpu 이중 루프</text>
+  <text class="s" x="110" y="99" text-anchor="middle">N² 쌍을 JS로 계산</text>
+  <line class="ln" x1="200" y1="85" x2="328" y2="85" marker-end="url(#arr)"/>
+  <text class="s" x="272" y="77" text-anchor="middle">writeBuffer</text>
+  <text class="s" x="272" y="102" text-anchor="middle">N×16바이트</text>
+  <rect class="box" x="330" y="62" width="140" height="46" rx="6"/>
+  <text x="400" y="90" text-anchor="middle">stateBuf</text>
+  <line class="ln" x1="470" y1="85" x2="538" y2="85" marker-end="url(#arr)"/>
+  <rect class="box" x="540" y="62" width="160" height="46" rx="6"/>
+  <text x="620" y="90" text-anchor="middle">렌더 패스</text>
+
+  <!-- lane 2: gpu -->
+  <text class="h" x="10" y="152">gpu-naive, gpu-tiled</text>
+  <rect class="box" x="20" y="162" width="180" height="46" rx="6"/>
+  <text x="110" y="182" text-anchor="middle">명령 기록 + submit</text>
+  <text class="s" x="110" y="199" text-anchor="middle">인코더 1개, 제출 1번</text>
+  <line class="ln" x1="200" y1="185" x2="328" y2="185" marker-end="url(#arr)"/>
+  <text class="s" x="272" y="177" text-anchor="middle">명령만</text>
+  <rect class="box" x="330" y="162" width="140" height="46" rx="6"/>
+  <text x="400" y="182" text-anchor="middle">컴퓨트 패스</text>
+  <text class="s" x="400" y="199" text-anchor="middle">bufs[0] ⇄ bufs[1]</text>
+  <line class="ln" x1="470" y1="185" x2="538" y2="185" marker-end="url(#arr)"/>
+  <text class="s" x="504" y="177" text-anchor="middle">같은 버퍼</text>
+  <rect class="box" x="540" y="162" width="160" height="46" rx="6"/>
+  <text x="620" y="190" text-anchor="middle">렌더 패스</text>
+
+  <!-- no readback -->
+  <path class="ln dash" d="M400,208 V245 H110 V212" marker-end="url(#arr)"/>
+  <line class="ln" x1="150" y1="235" x2="170" y2="255"/>
+  <line class="ln" x1="170" y1="235" x2="150" y2="255"/>
+  <text class="s" x="330" y="266">mapAsync 없음: 위치를 CPU로 읽어 오지 않습니다</text>
+  <text class="s" x="330" y="282">(verify.ts만 검증할 때 한 번 읽어 옵니다)</text>
+</svg>

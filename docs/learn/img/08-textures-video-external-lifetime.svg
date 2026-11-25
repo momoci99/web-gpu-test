@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 200" width="720" height="200" role="img" aria-label="rAF 콜백마다 importExternalTexture를 다시 부르고, 가져온 외부 텍스처는 그 task가 끝나면 만료되는 타임라인">
+  <style>
+    text { font-family: sans-serif; font-size: 13px; fill: currentColor; }
+    .s { font-size: 11px; }
+    .box { fill: currentColor; fill-opacity: 0.06; stroke: currentColor; stroke-width: 1.5; }
+    .bar { fill: currentColor; fill-opacity: 0.3; }
+    .ln { stroke: currentColor; stroke-width: 1.5; fill: none; }
+    .dash { stroke-dasharray: 5 4; }
+  </style>
+  <defs>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
+    </marker>
+  </defs>
+
+  <line class="ln" x1="20" y1="60" x2="700" y2="60" marker-end="url(#arr)"/>
+  <text class="s" x="690" y="80" text-anchor="end">시간</text>
+
+  <!-- task n -->
+  <rect class="box" x="30" y="30" width="270" height="30"/>
+  <text x="165" y="50" text-anchor="middle">rAF 콜백 n: frame()</text>
+  <text class="s" x="40" y="98">① importExternalTexture</text>
+  <text class="s" x="40" y="114">② createBindGroup</text>
+  <text class="s" x="40" y="130">③ 패스 기록</text>
+  <text class="s" x="40" y="146">④ queue.submit</text>
+  <rect class="bar" x="30" y="160" width="270" height="12"/>
+  <text class="s" x="30" y="190">외부 텍스처 n이 유효한 구간</text>
+  <line class="ln dash" x1="300" y1="25" x2="300" y2="175"/>
+  <text class="s" x="306" y="98">task 끝</text>
+  <text class="s" x="306" y="114">→ 만료</text>
+
+  <!-- task n+1 -->
+  <rect class="box" x="400" y="30" width="270" height="30"/>
+  <text x="535" y="50" text-anchor="middle">rAF 콜백 n+1: frame()</text>
+  <text class="s" x="410" y="98">① 다시 importExternalTexture</text>
+  <text class="s" x="410" y="114">② 바인드 그룹도 새로</text>
+  <rect class="bar" x="400" y="160" width="270" height="12"/>
+  <text class="s" x="400" y="190">외부 텍스처 n+1</text>
+</svg>
