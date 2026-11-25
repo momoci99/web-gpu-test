@@ -38,6 +38,13 @@ describe('parseChapter', () => {
     expect(c.summary).toBe('C = A × B를 계산합니다.');
   });
 
+  it('drops a leading H1 that repeats the front matter title', () => {
+    const c = parseChapter('a', '---\ntitle: 제목\n---\n\n# 제목\n\n본문\n\n# 뒤쪽 H1');
+    expect(c.title).toBe('제목');
+    expect(c.body.startsWith('본문')).toBe(true);
+    expect(c.body).toContain('# 뒤쪽 H1');
+  });
+
   it('prefers front matter', () => {
     expect(parseChapter('04-workgroup-memory', fixture)).toMatchObject({ order: 4, demo: 'compute-bench', hasFrontMatter: true });
   });
@@ -114,6 +121,11 @@ describe('renderMarkdown on the fixture', () => {
     expect(html).toContain('<div class="code" data-lang="wgsl"><pre class="shiki">');
     expect(html).toContain('<div class="code" data-lang="ts"><pre><code>');
     expect(html).toContain('<div class="code" data-lang="text">');
+  });
+
+  it('keeps style blocks of inlined SVG', () => {
+    const out = renderMarkdown('![x](img/a.svg)', { slug: 's', resolveImage: () => '<svg id="a"><style>#a{color:red}</style></svg>' });
+    expect(out).toContain('<style>#a{color:red}</style>');
   });
 
   it('strips scripts from inlined SVG', () => {
