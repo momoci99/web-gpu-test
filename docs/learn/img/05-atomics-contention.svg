@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" id="lc05-cont" viewBox="0 0 640 250" width="640" height="250" font-family="sans-serif" font-size="13" fill="none" stroke="currentColor" stroke-width="1.5" role="img" aria-labelledby="lc05-cont-t">
+  <title id="lc05-cont-t">경합: 점이 여러 칸에 흩어지면 atomicAdd가 동시에 끝나고, 한 칸에 몰리면 줄을 섬</title>
+  <style>#lc05-cont{color:#1f2328}@media (prefers-color-scheme:dark){#lc05-cont{color:#e6edf3}}#lc05-cont text{fill:currentColor;stroke:none}</style>
+  <defs>
+    <marker id="lc05-cont-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="currentColor" stroke="none"/></marker>
+  </defs>
+
+  <!-- left: spread out -->
+  <text x="20" y="26" font-weight="bold">점이 흩어진 경우</text>
+  <g>
+    <circle cx="40" cy="60" r="10"/><circle cx="76" cy="60" r="10"/><circle cx="112" cy="60" r="10"/><circle cx="148" cy="60" r="10"/>
+    <circle cx="184" cy="60" r="10"/><circle cx="220" cy="60" r="10"/><circle cx="256" cy="60" r="10"/><circle cx="292" cy="60" r="10"/>
+  </g>
+  <g marker-end="url(#lc05-cont-a)">
+    <line x1="40" y1="72" x2="40" y2="140"/><line x1="76" y1="72" x2="76" y2="140"/><line x1="112" y1="72" x2="112" y2="140"/><line x1="148" y1="72" x2="148" y2="140"/>
+    <line x1="184" y1="72" x2="184" y2="140"/><line x1="220" y1="72" x2="220" y2="140"/><line x1="256" y1="72" x2="256" y2="140"/><line x1="292" y1="72" x2="292" y2="140"/>
+  </g>
+  <g fill="currentColor" fill-opacity="0.15">
+    <rect x="28" y="142" width="24" height="24"/><rect x="64" y="142" width="24" height="24"/><rect x="100" y="142" width="24" height="24"/><rect x="136" y="142" width="24" height="24"/>
+    <rect x="172" y="142" width="24" height="24"/><rect x="208" y="142" width="24" height="24"/><rect x="244" y="142" width="24" height="24"/><rect x="280" y="142" width="24" height="24"/>
+  </g>
+  <text x="20" y="196" font-size="12">스레드 8개가 서로 다른 칸 8개에 atomicAdd.</text>
+  <text x="20" y="214" font-size="12">서로 기다리지 않습니다.</text>
+
+  <!-- right: clustered -->
+  <text x="340" y="26" font-weight="bold">점이 한 칸에 몰린 경우</text>
+  <g>
+    <circle cx="360" cy="60" r="10"/><circle cx="396" cy="60" r="10"/><circle cx="432" cy="60" r="10"/><circle cx="468" cy="60" r="10"/>
+    <circle cx="504" cy="60" r="10"/><circle cx="540" cy="60" r="10"/><circle cx="576" cy="60" r="10"/><circle cx="612" cy="60" r="10"/>
+  </g>
+  <g marker-end="url(#lc05-cont-a)" stroke-width="1.2">
+    <line x1="360" y1="72" x2="478" y2="140"/><line x1="396" y1="72" x2="481" y2="140"/><line x1="432" y1="72" x2="484" y2="140"/><line x1="468" y1="72" x2="487" y2="140"/>
+    <line x1="504" y1="72" x2="489" y2="140"/><line x1="540" y1="72" x2="492" y2="140"/><line x1="576" y1="72" x2="495" y2="140"/><line x1="612" y1="72" x2="498" y2="140"/>
+  </g>
+  <g fill="currentColor" fill-opacity="0.15">
+    <rect x="416" y="142" width="24" height="24"/><rect x="452" y="142" width="24" height="24"/>
+    <rect x="524" y="142" width="24" height="24"/><rect x="560" y="142" width="24" height="24"/>
+  </g>
+  <rect x="476" y="142" width="24" height="24" fill="currentColor" fill-opacity="0.7" stroke-width="2"/>
+  <text x="340" y="196" font-size="12">스레드 8개가 같은 칸 하나에 atomicAdd.</text>
+  <text x="340" y="214" font-size="12">하드웨어가 하나씩 처리하므로 8번 차례로 기다립니다.</text>
+</svg>
