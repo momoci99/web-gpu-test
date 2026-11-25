@@ -34,7 +34,7 @@ function createRenderer(opts: RenderOptions): Renderer {
       const svg = opts.resolveImage?.(href) ?? null;
       const alt = escapeHtml(text);
       const art = svg
-        ? svg.replace(/^\s*<\?xml[^>]*\?>/, '').replace(/<svg\b/, `<svg role="img" aria-label="${alt}"`)
+        ? svg.replace(/^\s*<\?xml[^>]*\?>/, '').replace(/<script\b[\s\S]*?<\/script>/gi, '').replace(/<svg\b/, `<svg role="img" aria-label="${alt}"`)
         : `<img src="${escapeHtml(href)}" alt="${alt}"${title ? ` title="${escapeHtml(title)}"` : ''}>`;
       return `<span class="diagram"><span class="diagram-art">${art}</span>${text ? `<span class="diagram-cap">${alt}</span>` : ''}</span>`;
     }

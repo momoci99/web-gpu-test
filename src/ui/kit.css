@@ -101,3 +101,6 @@ table.results tbody tr:last-child > * { border-bottom: 0; }
 .callout p, .callout ul, .callout ol { font-size: 0.97rem; line-height: 1.7; }
 .callout > :last-child { margin-bottom: 0.9em; }
 .page > .callout { grid-column: prose; }
+
+.max-list { list-style: none; padding: 0; margin: 4px 0 0; font-size: 0.95rem; }
+.max-list li { padding: 4px 0; }

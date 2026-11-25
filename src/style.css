@@ -242,3 +242,6 @@ td:first-child { font-family: var(--font-sans); }
 .card:hover strong { color: var(--accent); }
 .card .sum { display: block; color: var(--muted); max-width: 40em; line-height: 1.6; }
 .card .rel { display: inline-block; margin-top: 6px; font-size: 0.9rem; color: var(--muted); }
+
+[hidden] { display: none !important; }
+.demo-root > :not(.page, .learn):first-child { padding-top: 40px; }

@@ -14,6 +14,11 @@ describe('parseFrontMatter', () => {
     expect(body.startsWith('\n# 워크그룹')).toBe(true);
   });
 
+  it('keeps colons and parentheses inside values', () => {
+    const { data } = parseFrontMatter('---\ntitle: 계산 결과를 바로 그리기 (N-body)\nsummary: CPU 대 GPU: 교차점\nrefs: x\n---\nb');
+    expect(data).toEqual({ title: '계산 결과를 바로 그리기 (N-body)', summary: 'CPU 대 GPU: 교차점' });
+  });
+
   it('treats a file without a closed block as plain Markdown', () => {
     expect(parseFrontMatter('# 제목\n\n본문')).toEqual({ data: {}, body: '# 제목\n\n본문', found: false });
     expect(parseFrontMatter('---\ntitle: x\n본문').found).toBe(false);
@@ -109,6 +114,12 @@ describe('renderMarkdown on the fixture', () => {
     expect(html).toContain('<div class="code" data-lang="wgsl"><pre class="shiki">');
     expect(html).toContain('<div class="code" data-lang="ts"><pre><code>');
     expect(html).toContain('<div class="code" data-lang="text">');
+  });
+
+  it('strips scripts from inlined SVG', () => {
+    const out = renderMarkdown('![x](img/a.svg)', { slug: 's', resolveImage: () => '<svg><script>alert(1)</script><path/></svg>' });
+    expect(out).not.toContain('script');
+    expect(out).toContain('<path/>');
   });
 
   it('falls back to <img> for an unknown image', () => {
