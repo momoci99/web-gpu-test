@@ -59,25 +59,24 @@ const cpuCanvas: VariantEntry = {
   },
 };
 
-// After a run that imported camera frames, Chromium can briefly return a null adapter or fail requestDevice with
-// "A valid external Instance reference no longer exists" for the next request. A short retry gets a working one.
-export async function requestFilterDevice(caps: Capabilities): Promise<GPUDevice> {
-  if (caps.webgpu.kind !== 'available') throw new Error('WebGPU를 사용할 수 없습니다');
+let sharedDevice: Promise<GPUDevice> | null = null;
+
+// One device per page, never destroyed by a run. Destroying a device that imported video frames and requesting a new
+// one right after left Chromium without a valid instance for the next requestAdapter/requestDevice.
+export function getFilterDevice(caps: Capabilities): Promise<GPUDevice> {
+  if (caps.webgpu.kind !== 'available') return Promise.reject(new Error('WebGPU를 사용할 수 없습니다'));
   const requiredFeatures: GPUFeatureName[] = caps.webgpu.timestampQuery ? ['timestamp-query'] : [];
-  let lastError: unknown = new Error('requestAdapter()가 null을 반환했습니다');
-  for (let attempt = 0; attempt < 5; attempt++) {
-    if (attempt > 0) await new Promise((resolve) => setTimeout(resolve, 200 * attempt));
-    try {
-      const adapter = await navigator.gpu.requestAdapter();
-      if (!adapter) continue;
-      const device = await adapter.requestDevice({ requiredFeatures });
-      device.addEventListener('uncapturederror', (e) => console.error('WebGPU 오류:', (e as GPUUncapturedErrorEvent).error.message));
-      return device;
-    } catch (err) {
-      lastError = err;
-    }
-  }
-  throw lastError;
+  sharedDevice ??= (async () => {
+    const adapter = await navigator.gpu.requestAdapter();
+    if (!adapter) throw new Error('requestAdapter()가 null을 반환했습니다');
+    const device = await adapter.requestDevice({ requiredFeatures });
+    device.addEventListener('uncapturederror', (e) => console.error('WebGPU 오류:', (e as GPUUncapturedErrorEvent).error.message));
+    void device.lost.then(() => {
+      sharedDevice = null;
+    });
+    return device;
+  })();
+  return sharedDevice;
 }
 
 const gpuCompute: VariantEntry = {
@@ -86,7 +85,7 @@ const gpuCompute: VariantEntry = {
   summary: 'importExternalTexture로 비디오 프레임을 복사 없이 바인딩하고, 컴퓨트 패스(분리형 블러는 핑퐁 스토리지 텍스처)로 필터링한 뒤 캔버스에 그립니다.',
   requires: 'webgpu',
   async create({ host, source, width, height, params, caps }) {
-    const device = await requestFilterDevice(caps);
+    const device = await getFilterDevice(caps);
     const canvas = mountCanvas(host, width, height);
     const context = canvas.getContext('webgpu')!;
     const format = navigator.gpu.getPreferredCanvasFormat();
@@ -130,7 +129,7 @@ const gpuCompute: VariantEntry = {
         disposed = true;
         filter.dispose();
         timer?.destroy();
-        device.destroy();
+        context.unconfigure();
         canvas.remove();
       },
     };

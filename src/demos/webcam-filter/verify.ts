@@ -3,7 +3,7 @@ import { CpuFilter } from './cpu-filter';
 import type { FilterParams } from './filters';
 import { GpuFilter } from './gpu-filter';
 import { createPatternCanvas } from './source';
-import { requestFilterDevice } from './variants';
+import { getFilterDevice } from './variants';
 
 const WIDTH = 640;
 const HEIGHT = 360;
@@ -45,18 +45,17 @@ export async function verifyParity(caps: Capabilities): Promise<ParityResult> {
   const src = canvas.getContext('2d')!.getImageData(0, 0, WIDTH, HEIGHT).data;
   const cpu = new CpuFilter(WIDTH, HEIGHT);
 
-  const device = await requestFilterDevice(caps);
+  const device = await getFilterDevice(caps);
+  const input = device.createTexture({
+    size: { width: WIDTH, height: HEIGHT },
+    format: 'rgba8unorm',
+    usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT,
+  });
+  device.queue.copyExternalImageToTexture({ source: canvas }, { texture: input }, { width: WIDTH, height: HEIGHT });
+  const filter = await GpuFilter.create(device, WIDTH, HEIGHT);
+  const bytesPerRow = Math.ceil((WIDTH * 4) / 256) * 256;
+  const readback = device.createBuffer({ size: bytesPerRow * HEIGHT, usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ });
   try {
-    const input = device.createTexture({
-      size: { width: WIDTH, height: HEIGHT },
-      format: 'rgba8unorm',
-      usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT,
-    });
-    device.queue.copyExternalImageToTexture({ source: canvas }, { texture: input }, { width: WIDTH, height: HEIGHT });
-    const filter = await GpuFilter.create(device, WIDTH, HEIGHT);
-    const bytesPerRow = Math.ceil((WIDTH * 4) / 256) * 256;
-    const readback = device.createBuffer({ size: bytesPerRow * HEIGHT, usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ });
-
     const cases: ParityCase[] = [];
     for (const params of CASES) {
       const expected = new Uint8ClampedArray(WIDTH * HEIGHT * 4);
@@ -95,6 +94,8 @@ export async function verifyParity(caps: Capabilities): Promise<ParityResult> {
     }
     return { pass: cases.every((c) => c.pass), width: WIDTH, height: HEIGHT, maxTolerance: MAX_DIFF_TOLERANCE, meanTolerance: MEAN_DIFF_TOLERANCE, cases };
   } finally {
-    device.destroy();
+    readback.destroy();
+    filter.dispose();
+    input.destroy();
   }
 }
