@@ -1,0 +1,111 @@
+<svg xmlns="http://www.w3.org/2000/svg" id="lc06-pass" viewBox="0 0 680 420" width="680" height="420" font-family="sans-serif" font-size="13" fill="none" stroke="currentColor" stroke-width="1.5" role="img" aria-labelledby="lc06-pass-t">
+  <title id="lc06-pass-t">한 패스: 타일별 히스토그램, 표 전체의 exclusive scan, 안정적 스캐터</title>
+  <style>#lc06-pass{color:#1f2328}@media (prefers-color-scheme:dark){#lc06-pass{color:#e6edf3}}#lc06-pass text{fill:currentColor;stroke:none}</style>
+  <defs>
+    <marker id="lc06-pass-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="currentColor" stroke="none"/></marker>
+  </defs>
+  <text x="20" y="52" font-weight="bold">입력 (src)</text>
+  <text x="20" y="70" font-size="11">숫자 = 이번 패스의 자릿수</text>
+  <rect x="170" y="36" width="54" height="34" rx="3" fill="currentColor" fill-opacity="0.4"/>
+  <text x="197.0" y="58.0" text-anchor="middle">2a</text>
+  <text x="197.0" y="30" text-anchor="middle" font-size="11">0</text>
+  <rect x="232" y="36" width="54" height="34" rx="3" fill="currentColor" fill-opacity="0.06"/>
+  <text x="259.0" y="58.0" text-anchor="middle">0b</text>
+  <text x="259.0" y="30" text-anchor="middle" font-size="11">1</text>
+  <rect x="294" y="36" width="54" height="34" rx="3" fill="currentColor" fill-opacity="0.4"/>
+  <text x="321.0" y="58.0" text-anchor="middle">2c</text>
+  <text x="321.0" y="30" text-anchor="middle" font-size="11">2</text>
+  <rect x="356" y="36" width="54" height="34" rx="3" fill="currentColor" fill-opacity="0.2"/>
+  <text x="383.0" y="58.0" text-anchor="middle">1d</text>
+  <text x="383.0" y="30" text-anchor="middle" font-size="11">3</text>
+  <rect x="418" y="36" width="54" height="34" rx="3" fill="currentColor" fill-opacity="0.06"/>
+  <text x="445.0" y="58.0" text-anchor="middle">0e</text>
+  <text x="445.0" y="30" text-anchor="middle" font-size="11">4</text>
+  <rect x="480" y="36" width="54" height="34" rx="3" fill="currentColor" fill-opacity="0.4"/>
+  <text x="507.0" y="58.0" text-anchor="middle">2f</text>
+  <text x="507.0" y="30" text-anchor="middle" font-size="11">5</text>
+  <rect x="542" y="36" width="54" height="34" rx="3" fill="currentColor" fill-opacity="0.2"/>
+  <text x="569.0" y="58.0" text-anchor="middle">1g</text>
+  <text x="569.0" y="30" text-anchor="middle" font-size="11">6</text>
+  <rect x="604" y="36" width="54" height="34" rx="3" fill="currentColor" fill-opacity="0.06"/>
+  <text x="631.0" y="58.0" text-anchor="middle">0h</text>
+  <text x="631.0" y="30" text-anchor="middle" font-size="11">7</text>
+  <path d="M170 78 V84 H410 V78"/>
+  <text x="290.0" y="100" text-anchor="middle" font-size="12">타일 0</text>
+  <path d="M418 78 V84 H658 V78"/>
+  <text x="538.0" y="100" text-anchor="middle" font-size="12">타일 1</text>
+  <text x="20" y="152" font-weight="bold">① 히스토그램</text>
+  <text x="20" y="170" font-size="11">hist[자릿수 × 타일수 + 타일]</text>
+  <rect x="170" y="136" width="54" height="34" rx="3"/>
+  <text x="197.0" y="158.0" text-anchor="middle">1</text>
+  <text x="197.0" y="130" text-anchor="middle" font-size="11">d0 t0</text>
+  <rect x="232" y="136" width="54" height="34" rx="3"/>
+  <text x="259.0" y="158.0" text-anchor="middle">2</text>
+  <text x="259.0" y="130" text-anchor="middle" font-size="11">d0 t1</text>
+  <rect x="294" y="136" width="54" height="34" rx="3"/>
+  <text x="321.0" y="158.0" text-anchor="middle">1</text>
+  <text x="321.0" y="130" text-anchor="middle" font-size="11">d1 t0</text>
+  <rect x="356" y="136" width="54" height="34" rx="3"/>
+  <text x="383.0" y="158.0" text-anchor="middle">1</text>
+  <text x="383.0" y="130" text-anchor="middle" font-size="11">d1 t1</text>
+  <rect x="418" y="136" width="54" height="34" rx="3"/>
+  <text x="445.0" y="158.0" text-anchor="middle">2</text>
+  <text x="445.0" y="130" text-anchor="middle" font-size="11">d2 t0</text>
+  <rect x="480" y="136" width="54" height="34" rx="3"/>
+  <text x="507.0" y="158.0" text-anchor="middle">1</text>
+  <text x="507.0" y="130" text-anchor="middle" font-size="11">d2 t1</text>
+  <text x="20" y="242" font-weight="bold">② exclusive scan</text>
+  <text x="20" y="260" font-size="11">offsets: 앞 칸들의 합</text>
+  <rect x="170" y="226" width="54" height="34" rx="3" fill="currentColor" fill-opacity="0.1"/>
+  <text x="197.0" y="248.0" text-anchor="middle">0</text>
+  <text x="197.0" y="220" text-anchor="middle" font-size="11">d0 t0</text>
+  <rect x="232" y="226" width="54" height="34" rx="3" fill="currentColor" fill-opacity="0.1"/>
+  <text x="259.0" y="248.0" text-anchor="middle">1</text>
+  <text x="259.0" y="220" text-anchor="middle" font-size="11">d0 t1</text>
+  <rect x="294" y="226" width="54" height="34" rx="3" fill="currentColor" fill-opacity="0.1"/>
+  <text x="321.0" y="248.0" text-anchor="middle">3</text>
+  <text x="321.0" y="220" text-anchor="middle" font-size="11">d1 t0</text>
+  <rect x="356" y="226" width="54" height="34" rx="3" fill="currentColor" fill-opacity="0.1"/>
+  <text x="383.0" y="248.0" text-anchor="middle">4</text>
+  <text x="383.0" y="220" text-anchor="middle" font-size="11">d1 t1</text>
+  <rect x="418" y="226" width="54" height="34" rx="3" fill="currentColor" fill-opacity="0.1"/>
+  <text x="445.0" y="248.0" text-anchor="middle">5</text>
+  <text x="445.0" y="220" text-anchor="middle" font-size="11">d2 t0</text>
+  <rect x="480" y="226" width="54" height="34" rx="3" fill="currentColor" fill-opacity="0.1"/>
+  <text x="507.0" y="248.0" text-anchor="middle">7</text>
+  <text x="507.0" y="220" text-anchor="middle" font-size="11">d2 t1</text>
+  <line x1="197.0" y1="172" x2="197.0" y2="206" stroke-width="1" marker-end="url(#lc06-pass-a)"/>
+  <line x1="259.0" y1="172" x2="259.0" y2="206" stroke-width="1" marker-end="url(#lc06-pass-a)"/>
+  <line x1="321.0" y1="172" x2="321.0" y2="206" stroke-width="1" marker-end="url(#lc06-pass-a)"/>
+  <line x1="383.0" y1="172" x2="383.0" y2="206" stroke-width="1" marker-end="url(#lc06-pass-a)"/>
+  <line x1="445.0" y1="172" x2="445.0" y2="206" stroke-width="1" marker-end="url(#lc06-pass-a)"/>
+  <line x1="507.0" y1="172" x2="507.0" y2="206" stroke-width="1" marker-end="url(#lc06-pass-a)"/>
+  <text x="20" y="332" font-weight="bold">③ 스캐터 (dst)</text>
+  <text x="20" y="350" font-size="11">out[offset + 타일 안 순위]</text>
+  <rect x="170" y="316" width="54" height="34" rx="3" fill="currentColor" fill-opacity="0.06"/>
+  <text x="197.0" y="338.0" text-anchor="middle">0b</text>
+  <text x="197.0" y="310" text-anchor="middle" font-size="11">0</text>
+  <rect x="232" y="316" width="54" height="34" rx="3" fill="currentColor" fill-opacity="0.06"/>
+  <text x="259.0" y="338.0" text-anchor="middle">0e</text>
+  <text x="259.0" y="310" text-anchor="middle" font-size="11">1</text>
+  <rect x="294" y="316" width="54" height="34" rx="3" fill="currentColor" fill-opacity="0.06"/>
+  <text x="321.0" y="338.0" text-anchor="middle">0h</text>
+  <text x="321.0" y="310" text-anchor="middle" font-size="11">2</text>
+  <rect x="356" y="316" width="54" height="34" rx="3" fill="currentColor" fill-opacity="0.2"/>
+  <text x="383.0" y="338.0" text-anchor="middle">1d</text>
+  <text x="383.0" y="310" text-anchor="middle" font-size="11">3</text>
+  <rect x="418" y="316" width="54" height="34" rx="3" fill="currentColor" fill-opacity="0.2"/>
+  <text x="445.0" y="338.0" text-anchor="middle">1g</text>
+  <text x="445.0" y="310" text-anchor="middle" font-size="11">4</text>
+  <rect x="480" y="316" width="54" height="34" rx="3" fill="currentColor" fill-opacity="0.4"/>
+  <text x="507.0" y="338.0" text-anchor="middle">2a</text>
+  <text x="507.0" y="310" text-anchor="middle" font-size="11">5</text>
+  <rect x="542" y="316" width="54" height="34" rx="3" fill="currentColor" fill-opacity="0.4"/>
+  <text x="569.0" y="338.0" text-anchor="middle">2c</text>
+  <text x="569.0" y="310" text-anchor="middle" font-size="11">6</text>
+  <rect x="604" y="316" width="54" height="34" rx="3" fill="currentColor" fill-opacity="0.4"/>
+  <text x="631.0" y="338.0" text-anchor="middle">2f</text>
+  <text x="631.0" y="310" text-anchor="middle" font-size="11">7</text>
+  <text x="20" y="386" font-size="12">예: 2c는 offsets[d2 t0] = 5에 타일 0 안에서 자릿수 2인 키 중 두 번째(순위 1)이므로 6번 칸.</text>
+  <text x="20" y="406" font-size="12">같은 자릿수끼리는 입력 순서(b, e, h / a, c, f)가 그대로 남습니다. 그림은 자릿수를 3개로 줄였습니다(실제 16개).</text>
+</svg>
