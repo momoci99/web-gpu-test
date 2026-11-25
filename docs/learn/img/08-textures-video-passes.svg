@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 280" width="720" height="280" role="img" aria-label="비디오 프레임을 가져와 ingest, 가로 블러, 세로 블러, present 패스를 거쳐 캔버스에 그리는 흐름">
+  <style>
+    text { font-family: sans-serif; font-size: 13px; fill: currentColor; }
+    .s { font-size: 11px; }
+    .box { fill: currentColor; fill-opacity: 0.06; stroke: currentColor; stroke-width: 1.5; }
+    .ln { stroke: currentColor; stroke-width: 1.5; fill: none; }
+    .dash { stroke-dasharray: 5 4; }
+  </style>
+  <defs>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
+    </marker>
+  </defs>
+
+  <rect class="ln dash" x="8" y="8" width="704" height="230" rx="8"/>
+  <text class="s" x="20" y="28">커맨드 인코더 1개, queue.submit 1번 (frame() 한 번)</text>
+
+  <!-- row 1 -->
+  <rect class="box" x="20" y="45" width="130" height="48" rx="6"/>
+  <text x="85" y="66" text-anchor="middle">&lt;video&gt;</text>
+  <text class="s" x="85" y="83" text-anchor="middle">디코더가 만든 프레임</text>
+  <line class="ln" x1="150" y1="69" x2="218" y2="69" marker-end="url(#arr)"/>
+  <text class="s" x="184" y="61" text-anchor="middle">import</text>
+
+  <rect class="box dash" x="220" y="45" width="150" height="48" rx="6"/>
+  <text x="295" y="66" text-anchor="middle">texture_external</text>
+  <text class="s" x="295" y="83" text-anchor="middle">복사 없음, 이번 task만</text>
+  <line class="ln" x1="370" y1="69" x2="508" y2="69" marker-end="url(#arr)"/>
+  <text class="s" x="439" y="61" text-anchor="middle">ingest 패스</text>
+  <text class="s" x="439" y="85" text-anchor="middle">샘플러로 읽기</text>
+
+  <rect class="box" x="510" y="45" width="130" height="48" rx="6"/>
+  <text x="575" y="66" text-anchor="middle">a</text>
+  <text class="s" x="575" y="83" text-anchor="middle">rgba16float</text>
+
+  <!-- row 2 -->
+  <path class="ln" d="M575,93 V120 H85 V143" marker-end="url(#arr)"/>
+  <rect class="box" x="20" y="145" width="130" height="48" rx="6"/>
+  <text x="85" y="166" text-anchor="middle">a</text>
+  <text class="s" x="85" y="183" text-anchor="middle">textureLoad로 읽기</text>
+  <line class="ln" x1="150" y1="169" x2="208" y2="169" marker-end="url(#arr)"/>
+  <text class="s" x="179" y="161" text-anchor="middle">가로</text>
+
+  <rect class="box" x="210" y="145" width="120" height="48" rx="6"/>
+  <text x="270" y="166" text-anchor="middle">b</text>
+  <text class="s" x="270" y="183" text-anchor="middle">rgba16float</text>
+  <line class="ln" x1="330" y1="169" x2="388" y2="169" marker-end="url(#arr)"/>
+  <text class="s" x="359" y="161" text-anchor="middle">세로</text>
+
+  <rect class="box" x="390" y="145" width="120" height="48" rx="6"/>
+  <text x="450" y="166" text-anchor="middle">output</text>
+  <text class="s" x="450" y="183" text-anchor="middle">rgba8unorm</text>
+  <line class="ln" x1="510" y1="169" x2="578" y2="169" marker-end="url(#arr)"/>
+  <text class="s" x="544" y="161" text-anchor="middle">present</text>
+
+  <rect class="box" x="580" y="145" width="120" height="48" rx="6"/>
+  <text x="640" y="166" text-anchor="middle">캔버스</text>
+  <text class="s" x="640" y="183" text-anchor="middle">getCurrentTexture()</text>
+
+  <text class="s" x="20" y="220">가로, 세로, present 앞의 화살표는 각각 패스 하나입니다. 가로·세로는 컴퓨트 패스, present는 렌더 패스입니다.</text>
+  <text x="20" y="265">한 패스에서 읽는 텍스처와 쓰는 텍스처는 서로 다릅니다 (a → b → output).</text>
+</svg>
