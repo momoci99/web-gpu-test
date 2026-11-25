@@ -38,3 +38,10 @@ th, td { padding: 4px 10px; border-bottom: 1px solid color-mix(in srgb, currentC
 th:first-child, td:first-child { text-align: left; }
 
 .chart { margin-top: 1rem; }
+
+.back { display: inline-block; margin-bottom: 0.5rem; }
+.notice { padding: 8px 12px; border: 1px solid color-mix(in srgb, currentColor 30%, transparent); }
+.cards { display: grid; gap: 12px; margin-top: 1rem; }
+.card { display: flex; flex-direction: column; gap: 4px; padding: 12px 16px; text-decoration: none; color: inherit; border: 1px solid color-mix(in srgb, currentColor 30%, transparent); }
+.card:hover { background: color-mix(in srgb, currentColor 8%, transparent); }
+.card span { opacity: 0.75; font-size: 0.9rem; }
