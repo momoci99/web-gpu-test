@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 680 230" width="680" height="230" font-family="system-ui, sans-serif" font-size="13" fill="none" stroke="currentColor" stroke-width="1.5">
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0 0 L10 5 L0 10 z" fill="currentColor" stroke="none"/>
+    </marker>
+  </defs>
+  <!-- buffers -->
+  <rect x="10" y="60" width="130" height="70" rx="6"/>
+  <text x="75" y="84" text-anchor="middle" fill="currentColor" stroke="none" font-family="ui-monospace, monospace" font-weight="600">inBuf</text>
+  <text x="75" y="104" text-anchor="middle" fill="currentColor" stroke="none" font-size="12">16,777,216개</text>
+  <text x="75" y="120" text-anchor="middle" fill="currentColor" stroke="none" font-size="11">(64 MiB)</text>
+  <rect x="200" y="60" width="120" height="70" rx="6"/>
+  <text x="260" y="84" text-anchor="middle" fill="currentColor" stroke="none" font-family="ui-monospace, monospace" font-weight="600">ping</text>
+  <text x="260" y="104" text-anchor="middle" fill="currentColor" stroke="none" font-size="12">16,384개</text>
+  <rect x="380" y="60" width="120" height="70" rx="6"/>
+  <text x="440" y="84" text-anchor="middle" fill="currentColor" stroke="none" font-family="ui-monospace, monospace" font-weight="600">pong</text>
+  <text x="440" y="104" text-anchor="middle" fill="currentColor" stroke="none" font-size="12">16개</text>
+  <rect x="560" y="60" width="110" height="70" rx="6" stroke-width="2.5"/>
+  <text x="615" y="84" text-anchor="middle" fill="currentColor" stroke="none" font-family="ui-monospace, monospace" font-weight="600">ping[0]</text>
+  <text x="615" y="104" text-anchor="middle" fill="currentColor" stroke="none" font-size="12">1개 (합계)</text>
+  <!-- arrows with pass labels -->
+  <line x1="140" y1="95" x2="198" y2="95" marker-end="url(#a)"/>
+  <text x="170" y="30" text-anchor="middle" fill="currentColor" stroke="none" font-weight="600">패스 0</text>
+  <text x="170" y="48" text-anchor="middle" fill="currentColor" stroke="none" font-size="11">워크그룹 16,384</text>
+  <line x1="320" y1="95" x2="378" y2="95" marker-end="url(#a)"/>
+  <text x="350" y="30" text-anchor="middle" fill="currentColor" stroke="none" font-weight="600">패스 1</text>
+  <text x="350" y="48" text-anchor="middle" fill="currentColor" stroke="none" font-size="11">워크그룹 16</text>
+  <line x1="500" y1="95" x2="558" y2="95" marker-end="url(#a)"/>
+  <text x="530" y="30" text-anchor="middle" fill="currentColor" stroke="none" font-weight="600">패스 2</text>
+  <text x="530" y="48" text-anchor="middle" fill="currentColor" stroke="none" font-size="11">워크그룹 1</text>
+  <!-- readback -->
+  <line x1="615" y1="130" x2="615" y2="168" marker-end="url(#a)"/>
+  <rect x="540" y="170" width="130" height="40" rx="6" stroke-dasharray="5 4"/>
+  <text x="605" y="195" text-anchor="middle" fill="currentColor" stroke="none" font-family="ui-monospace, monospace" font-size="12">readBuf (4 B)</text>
+  <text x="10" y="168" fill="currentColor" stroke="none" font-size="12">n = 2^24일 때. 패스마다 원소 수가 1/1024로 줄어듭니다.</text>
+  <text x="10" y="188" fill="currentColor" stroke="none" font-size="12">ping과 pong은 패스마다 읽기와 쓰기를 번갈아 맡습니다.</text>
+  <text x="10" y="208" fill="currentColor" stroke="none" font-size="12">세 패스 모두 커맨드 인코더 하나에 기록하고 한 번 제출합니다.</text>
+</svg>
