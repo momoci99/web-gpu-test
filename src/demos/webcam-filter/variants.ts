@@ -29,7 +29,7 @@ function mountCanvas(host: HTMLElement, width: number, height: number): HTMLCanv
   const canvas = document.createElement('canvas');
   canvas.width = width;
   canvas.height = height;
-  canvas.style.maxWidth = '100%';
+  canvas.style.width = '100%';
   canvas.style.height = 'auto';
   host.replaceChildren(canvas);
   return canvas;
