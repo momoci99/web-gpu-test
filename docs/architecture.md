@@ -128,7 +128,7 @@ Hard rule: **adding a demo or a compute workload touches only files inside its o
 ## Shell (src/main.ts, src/core/demo.ts)
 
 - `index.html` is the only page. `src/main.ts` eager-globs `./demos/*/meta.ts` (home cards, sorted by `order`, then `id`) and lazy-globs `./demos/*/main.ts`.
-- Empty hash: home list. `#/<id>`: back link + `mount(host, caps)`. Unknown id: home with a notice. `hashchange` reloads the page, so no state or GPU device leaks between demos.
+- Routes (`src/router.ts`): empty hash is home, `#/learn` and `#/learn/<slug>[#<heading-id>]` are learn pages (navigating between them re-renders without a reload). `#/<id>`: the top bar + `mount(host, caps)`. Unknown id: home with a notice. `hashchange` reloads the page, so no state or GPU device leaks between demos.
 - The shell sets `window.__caps` (the `Capabilities`) before mounting. A demo sets `window.__demo` (typed `unknown` globally) to its own test-hook object; its `smoke.mjs` knows the shape. `window.__bench` no longer exists.
 
 ```ts
@@ -185,17 +185,49 @@ interface Workload<I, O> { id; label; summary; sizes; smokeSizes; sizeLabel(n); 
 
 Builds, previews, launches Chromium (WebGPU flags, fake media-stream flags, headless then headed fallback), checks that the home page shows one card per demo folder with a `meta.ts`, then for each `src/demos/<id>/smoke.mjs` opens a fresh page at `#/<id>`, waits for `window.__demo`, and calls `smoke({ page, caps, url, log, fail })`. Console errors on that page fail the demo. A demo folder without `smoke.mjs` fails. `SMOKE_ONLY=<id> npm run smoke` runs one demo and skips the home check. Smoke numbers are never performance claims.
 
+## UI kit and demo page pattern
+
+Styling lives in `src/style.css` (tokens, fonts, base, shell, legacy classes) and `src/ui/kit.css` (kit components). The learn pages add `src/learn/learn.css`. Tokens are CSS variables with a light set and a `prefers-color-scheme: dark` set: `--bg --surface --sunken --text --muted --border --accent --accent-soft --code-bg`. Fonts are self-hosted from npm (Pretendard Variable, JetBrains Mono). Body text is 17px with `word-break: keep-all` for Korean.
+
+**Series palette.** Chart and legend colors are fixed per role, never picked per demo: `cpu-a` and `cpu-b` are warm (CPU-side work), `gpu-a`, `gpu-b` and `gpu-c` are cool (GPU-side work). Use `seriesVar(token)` for a swatch and `SeriesToken` for chart series. render-compare maps svg to `cpu-a`, canvas2d to `cpu-b`, webgl2 to `gpu-a`, webgpu-cpu to `gpu-b`, webgpu-compute to `gpu-c`. Map a new demo's variants onto the same roles (a CPU baseline is warm, a GPU variant is cool).
+
+**Kit API (`import { ... } from '../../ui'`).** Build demo DOM with these; do not hand-write styles for what they cover.
+
+```ts
+page({ title, lede, chapter?, eyebrow? }, ...children): HTMLElement   // article + header; `chapter` is a learn slug, the link appears once the chapter exists
+section({ title }, ...children): HTMLElement                          // h2 block in the reading column
+figure({ caption, wide?, width?, height? }): { el, stage, setCaption } // live stage, 1040px break-out, stage max-width = width
+controls(...nodes) ; button({ label, variant?, onClick }) ; numberField({ label, value, min?, max?, step?, unit? }) -> { el, input, read() }
+slider({ label, min, max, step?, value, format?, onInput? }) ; segmented({ label, options, value, onChange? }) -> { el, get, set }
+checkList(items: CheckItem[], onChange?) -> { el, selected() }       // CheckItem: { id, label, hint?, disabledReason?, checked?, swatch? }
+status(initial?) -> { el, set(text, tone?: 'info' | 'ok' | 'error') }  // the element has class .status
+resultsTable(columns: { label, unit?, numeric? }[]) -> { el, setRows(string[][]) }  // wrapper has class .table; first column is the row header
+chart({ title?, xLabel, yLabel, series: { label, color: SeriesToken, dashed? }[], logX?, logY?, height? }) -> { el, setData(xs, ys[][]) }  // uPlot, themed, resizes
+callout(kind, body, title?)  // kind: 핵심 | 주의 | 해보기 | 측정 한계 | 용어
+capsPanel(caps, extra?) -> { el, update(extra) } ; chapterLink(slug) ; livePreview(create, onError?) -> { start, suspend, resume }
+```
+
+**Demo page pattern.** Order, top to bottom: `page` header (title, lede, chapter link), a live `figure`, "무엇을 비교하나" (short text plus the variant `checkList`), "직접 측정하기" (`controls` and `status`), "결과" (max-N list, `resultsTable`, `chart`, `capsPanel`), `callout('측정 한계', ...)`, `callout('해보기', ...)`, closing `chapterLink`. Tables, charts and figures break out to 1040px on their own; text stays at 720px. The layout is one root: `root.replaceChildren(page(...))`.
+
+**Alive on load.** The figure shows a running preview at a modest size using the best available variant, started with `livePreview(create)` where `create` returns a `FrameTarget`. It stops while the tab is hidden. Call `preview.suspend()` before every measurement (and clear the stage), `preview.resume()` after, so a preview never shares the GPU or main thread with a run. Measure in the figure's `stage` so the reader sees what is measured. The preview size follows `stage.clientWidth`; measurements keep their fixed scene size so numbers stay comparable. Expose `suspendPreview` and `resumePreview` on `window.__demo` (see render-compare `main.ts`) and have `smoke.mjs` wait for the preview to draw, then suspend it before it calls measurement hooks directly.
+
+**Smoke selectors.** Keep the kit's class names that smoke can rely on: `.status` (one per page), `.table tbody tr`, `.chart canvas`, `.stage`. Button names are Korean labels, so keep them stable.
+
+**Not yet on the kit.** A demo that has not been restyled still renders: its children get a padded 1040px column and the base classes (`.controls`, `.status`, `.table`, `.chart`, `.caps`, `.checks`, `.stage`) are themed. Restyling means replacing that DOM with the kit, not adding new classes.
+
+**Learn pages.** `#/learn` and `#/learn/<slug>` render `docs/learn/*.md` (marked plus shiki, loaded lazily). Slug is the file name without `.md`. Front matter keys: `title`, `order`, `summary`, `demo`. Callouts are blockquotes whose first line is a bold label (`> **핵심**`). `NN-slug.md` links become routes, other relative links become GitHub URLs, `img/*.svg` is inlined so `currentColor` follows the theme.
+
 ## Adding a demo
 
-Create only `src/demos/<id>/`. Read `src/demos/render-compare/` as the example.
+Create `src/demos/<id>/`. Read `src/demos/render-compare/` as the example (it is the reference for the kit and the page pattern above).
 
 1. `meta.ts`: `export const meta: DemoMeta = { id, title, summary, order }`, Korean `title` and `summary`. The home page loads every `meta.ts` eagerly, so import only types here (`import type { DemoMeta } from '../../core/demo'`).
 2. `main.ts`: `export const mount: MountDemo = async (root, caps) => { ... }`. Set `window.__demo = { ...hooks }` first, then render into `root`. Do not touch the DOM outside `root`. The page reloads on hash change, so no teardown is needed.
 3. Hooks: expose what `smoke.mjs` needs to run your measurement from `page.evaluate` and read plain JSON back (variant registry, a run function, a verify function). Frame-loop demos implement `FrameTarget` and measure with `runFrames` from `core/frame-bench`. Import what you need from `core/` (`capabilities`, `stats`, `rng`, `gpu-timer`, `frame-loop`, `oneshot`) instead of copying it.
 4. `smoke.mjs`: `export default async function smoke({ page, caps, url, log, fail }) {}`. `caps` is the page's `Capabilities` as JSON. Run each variant at a small size; call `fail(msg)` on any wrong result (bad shape, non-finite numbers, failed correctness check); skip WebGPU-only variants when `caps.webgpu.kind !== 'available'`; `log` a summary table. Do not call `process.exit`. The runner reports console errors.
-5. UI text is Korean; code, identifiers and commit messages are English. Vanilla TS, no framework. Do not edit `src/style.css`: reuse its base classes (`.controls`, `.status`, `.table`, `.chart`, `.caps`, `.checks`, `.stage`) and put your own styling in a `<style>` element your `mount` appends to `root`, or in inline styles.
+5. UI text is Korean; code, identifiers and commit messages are English. Vanilla TS, no framework. Build the page from `src/ui/` as described above. Do not edit `src/style.css` or `src/ui/`; if the kit lacks something, put a small `<style>` element in your `mount` for that one thing and report the gap.
 6. Pure logic gets a `*.test.ts` next to it (vitest picks up `src/**/*.test.ts`).
-7. Edit nothing outside your folder. If you need a change in `core/` or the shell, stop and report it.
+7. Edit nothing outside your folder. If you need a change in `core/`, the kit or the shell, stop and report it.
 8. Bar before you hand back: `npm run typecheck`, `npm run test`, `npm run build` and `SMOKE_ONLY=<id> npm run smoke` pass, then the full `npm run smoke` passes once and its home check lists your demo.
 
 ## Adding a compute workload
