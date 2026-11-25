@@ -43,12 +43,12 @@ export class GpuTimer {
     this.#pending = buf;
   }
 
-  /** Call right after `queue.submit`. */
-  afterSubmit(): void {
+  /** Call right after `queue.submit`. The returned promise settles once the sample is in `drain()`; per-frame callers ignore it. */
+  afterSubmit(): Promise<void> {
     const buf = this.#pending;
-    if (!buf) return;
+    if (!buf) return Promise.resolve();
     this.#pending = null;
-    buf
+    return buf
       .mapAsync(GPUMapMode.READ)
       .then(() => {
         const t = new BigUint64Array(buf.getMappedRange().slice(0));
