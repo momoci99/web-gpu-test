@@ -96,8 +96,9 @@ export function createDrawer(device: GPUDevice, host: HTMLElement, count: number
   const canvas = document.createElement('canvas');
   canvas.width = Math.round(CANVAS_SIZE * caps.dpr);
   canvas.height = canvas.width;
-  canvas.style.width = `${CANVAS_SIZE}px`;
-  canvas.style.height = `${CANVAS_SIZE}px`;
+  canvas.style.width = '100%';
+  canvas.style.maxWidth = `${CANVAS_SIZE}px`;
+  canvas.style.aspectRatio = '1';
   canvas.style.background = '#000';
   host.replaceChildren(canvas);
   const context = canvas.getContext('webgpu');

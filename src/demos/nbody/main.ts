@@ -7,6 +7,7 @@ import { registry } from './variants';
 import { verifyNBody } from './verify';
 
 export const mount: MountDemo = async (root, caps) => {
-  window.__demo = { estimateRefresh, rampMaxN, trialPasses, unmetReason, runFixed, verifyNBody, registry };
-  mountNBody(root, caps);
+  const hooks = { estimateRefresh, rampMaxN, trialPasses, unmetReason, runFixed, verifyNBody, registry };
+  window.__demo = hooks;
+  Object.assign(hooks, mountNBody(root, caps));
 };
