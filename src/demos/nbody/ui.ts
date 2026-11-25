@@ -233,7 +233,7 @@ export function mountNBody(root: HTMLElement, caps: Capabilities): void {
     chartHost,
     el('h2', { textContent: '정확도 검증' }),
     el('p', {
-      textContent: `같은 시드에서 N=${VERIFY_COUNT}, ${VERIFY_STEPS}스텝을 CPU(f64 누산)와 각 GPU 커널(f32)로 돌려 최대 절대 위치 오차를 비교합니다. 허용 오차는 ${VERIFY_TOLERANCE} px입니다. 중력은 가까운 만남에서 반올림 차이를 증폭하고 합산 순서도 CPU와 GPU가 달라서, 스텝이 길어질수록 차이가 벌어지는 것이 정상입니다. 그래서 스텝 수를 작게 잡았고, 허용 오차는 측정된 오차(약 3e-5 px, 반지름 300 부근 f32의 1 ulp)의 30배 여유이면서, 타일(256개) 하나를 빼먹는 버그가 만드는 오차(약 0.06 px)보다 60배 작게 잡았습니다. 물체 하나를 빼먹는 정도의 미세한 버그는 잡지 못합니다.`,
+      textContent: `같은 시드에서 N=${VERIFY_COUNT}, ${VERIFY_STEPS}스텝을 CPU(f64 누산)와 각 GPU 커널(f32)로 돌려 최대 절대 위치 오차를 비교합니다. 허용 오차는 ${VERIFY_TOLERANCE} px입니다. 중력은 가까운 만남에서 반올림 차이를 증폭하고 합산 순서도 CPU와 GPU가 달라서, 스텝이 길어질수록 차이가 벌어지는 것이 정상입니다. 그래서 스텝 수를 작게 잡았고, 허용 오차는 측정된 오차(약 3e-5 px, 반지름 300 부근 f32의 1 ulp)의 30배 여유이면서, 타일(256개) 하나를 빼먹는 버그가 만드는 최대 오차(CPU 실험으로 약 0.3 px)보다 훨씬 작게 잡았습니다. 물체 하나를 빼먹는 정도의 미세한 버그는 잡지 못합니다.`,
     }),
     verifyHost,
     el('h2', { textContent: '측정 한계' }),
