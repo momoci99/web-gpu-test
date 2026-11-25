@@ -1,8 +1,9 @@
 import uPlot from 'uplot';
 import 'uplot/dist/uPlot.min.css';
-import { estimateRefresh, rampMaxN, runFixed, trialPasses, type RunResult } from '../../core/bench';
+import { estimateRefresh, rampMaxN, trialPasses } from '../../core/frame-bench';
 import { unmetReason, type Capabilities } from '../../core/capabilities';
 import { registry } from './renderers/registry';
+import { runFixed, type RunResult } from './run';
 import type { RendererEntry } from './renderers/types';
 import type { SceneConfig } from './scene';
 import { verifyComputeParity } from './verify';

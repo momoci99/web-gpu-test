@@ -1,5 +1,6 @@
-import { estimateRefresh, runFixed } from './core/bench';
+import { estimateRefresh } from './core/frame-bench';
 import { detectCapabilities, unmetReason } from './core/capabilities';
+import { runFixed } from './demos/render-compare/run';
 import { registry } from './demos/render-compare/renderers/registry';
 import { mountRenderCompare } from './demos/render-compare/ui';
 import { verifyComputeParity } from './demos/render-compare/verify';

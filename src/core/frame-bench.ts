@@ -1,12 +1,19 @@
 import type { Capabilities } from './capabilities';
 import { collectFrames } from './frame-loop';
 import { summarize, type Summary } from './stats';
-import { createScene, type SceneConfig } from '../demos/render-compare/scene';
-import type { RendererEntry, RendererId } from '../demos/render-compare/renderers/types';
 
-export interface RunResult {
-  rendererId: RendererId;
-  count: number;
+export interface FrameTarget {
+  /** Advance and draw one frame. The harness times this call as main-thread cost. */
+  frame(): void;
+  /** Resolved timestamp-query durations (ms) since the last drain. Absent means no GPU timing. */
+  drainGpuSamples?(): number[];
+  /** Resolves when all work submitted so far has finished on the GPU. Absent when submission already blocks. */
+  settle?(): Promise<void>;
+  /** Idempotent. Releases DOM and GPU resources. */
+  dispose(): void;
+}
+
+export interface FrameStats {
   refreshHz: number;
   frames: number;
   interval: Summary;
@@ -18,8 +25,7 @@ export interface RunResult {
   effectiveFrameMs: number;
 }
 
-export interface FixedOptions {
-  host: HTMLElement;
+export interface FrameOptions {
   warmupFrames?: number;
   measureFrames?: number;
 }
@@ -41,15 +47,14 @@ function idleFor(ms: number): Promise<void> {
   return new Promise((r) => setTimeout(r, ms));
 }
 
-export async function runFixed(
-  entry: RendererEntry,
-  config: SceneConfig,
+export async function runFrames(
+  create: () => Promise<FrameTarget>,
   caps: Capabilities,
   refreshHz: number,
-  opts: FixedOptions,
-): Promise<RunResult> {
-  const { host, warmupFrames = 30, measureFrames = 120 } = opts;
-  const renderer = await entry.create(host, createScene(config), caps);
+  opts: FrameOptions = {},
+): Promise<FrameStats> {
+  const { warmupFrames = 30, measureFrames = 120 } = opts;
+  const renderer = await create();
   try {
     await collectFrames(() => renderer.frame(), warmupFrames);
     await renderer.settle?.();
@@ -75,8 +80,6 @@ export async function runFixed(
     const intervals = samples.map((s) => s.intervalMs);
     const period = 1000 / refreshHz;
     return {
-      rendererId: entry.id,
-      count: config.count,
       refreshHz,
       frames: samples.length,
       interval: summarize(intervals),
@@ -97,7 +100,7 @@ export async function runFixed(
   }
 }
 
-export function trialPasses(r: RunResult): boolean {
+export function trialPasses(r: FrameStats): boolean {
   const period = 1000 / r.refreshHz;
   return (
     r.interval.median <= PASS_MEDIAN_FACTOR * period &&

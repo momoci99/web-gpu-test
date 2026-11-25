@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { mulberry32 } from './rng';
 import { summarize } from './stats';
-import { rampMaxN, trialPasses, type RunResult } from './bench';
+import { rampMaxN, trialPasses, type FrameStats } from './frame-bench';
 
 describe('mulberry32', () => {
   it('produces the same sequence for the same seed', () => {
@@ -67,9 +67,7 @@ describe('rampMaxN', () => {
 });
 
 describe('trialPasses', () => {
-  const base = (median: number, droppedRatio: number, effectiveFrameMs = median): RunResult => ({
-    rendererId: 'canvas2d',
-    count: 1,
+  const base = (median: number, droppedRatio: number, effectiveFrameMs = median): FrameStats => ({
     refreshHz: 60,
     frames: 120,
     interval: { median, p95: median, mean: median, min: median, max: median, n: 120 },
