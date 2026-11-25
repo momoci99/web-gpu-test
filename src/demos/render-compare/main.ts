@@ -7,6 +7,7 @@ import { mountRenderCompare } from './ui';
 import { verifyComputeParity } from './verify';
 
 export const mount: MountDemo = async (root, caps) => {
-  window.__demo = { estimateRefresh, unmetReason, runFixed, verifyComputeParity, registry };
-  mountRenderCompare(root, caps);
+  const hooks = { estimateRefresh, unmetReason, runFixed, verifyComputeParity, registry };
+  window.__demo = hooks;
+  Object.assign(hooks, mountRenderCompare(root, caps));
 };
