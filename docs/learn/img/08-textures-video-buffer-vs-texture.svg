@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 270" width="720" height="270" role="img" aria-label="버퍼는 바이트의 1차원 배열이고 인덱스를 직접 계산하며, 텍스처는 포맷이 있는 2차원 텍셀 격자이고 좌표로 읽는 그림">
+  <style>
+    text { font-family: sans-serif; font-size: 13px; fill: currentColor; }
+    .s { font-size: 11px; }
+    .h { font-weight: bold; }
+    .c { fill: none; stroke: currentColor; stroke-width: 1; }
+    .hi { fill: currentColor; fill-opacity: 0.35; stroke: currentColor; stroke-width: 1.5; }
+    .ln { stroke: currentColor; stroke-width: 1.5; fill: none; }
+  </style>
+
+  <!-- buffer -->
+  <text class="h" x="20" y="24">버퍼 (GPUBuffer)</text>
+  <g>
+    <rect class="c" x="20" y="50" width="26" height="26"/>
+    <rect class="c" x="46" y="50" width="26" height="26"/>
+    <rect class="c" x="72" y="50" width="26" height="26"/>
+    <rect class="c" x="98" y="50" width="26" height="26"/>
+    <rect class="c" x="124" y="50" width="26" height="26"/>
+    <rect class="c" x="150" y="50" width="26" height="26"/>
+    <rect class="hi" x="176" y="50" width="26" height="26"/>
+    <rect class="c" x="202" y="50" width="26" height="26"/>
+    <rect class="c" x="228" y="50" width="26" height="26"/>
+    <rect class="c" x="254" y="50" width="26" height="26"/>
+    <rect class="c" x="280" y="50" width="26" height="26"/>
+    <rect class="c" x="306" y="50" width="26" height="26"/>
+  </g>
+  <text class="s" x="33" y="94" text-anchor="middle">0</text>
+  <text class="s" x="189" y="94" text-anchor="middle">6</text>
+  <text class="s" x="319" y="94" text-anchor="middle">11</text>
+  <text x="20" y="124">한 줄로 늘어선 바이트입니다. 형식은 셰이더 선언이 정합니다.</text>
+  <text x="20" y="146">(x, y) 픽셀의 위치는 직접 계산합니다:</text>
+  <text x="40" y="168">index = y × width + x  (width = 4이면 (2, 1) → 6)</text>
+  <text x="20" y="198">경계 밖 좌표 처리, RGBA 패킹도 코드가 맡습니다.</text>
+  <text class="s" x="20" y="222">WGSL: var&lt;storage&gt; data: array&lt;f32&gt;;  data[i]</text>
+
+  <line class="ln" x1="370" y1="15" x2="370" y2="255" stroke-dasharray="5 4"/>
+
+  <!-- texture -->
+  <text class="h" x="395" y="24">텍스처 (GPUTexture)</text>
+  <g>
+    <rect class="c" x="395" y="40" width="30" height="26"/><rect class="c" x="425" y="40" width="30" height="26"/><rect class="c" x="455" y="40" width="30" height="26"/><rect class="c" x="485" y="40" width="30" height="26"/>
+    <rect class="c" x="395" y="66" width="30" height="26"/><rect class="c" x="425" y="66" width="30" height="26"/><rect class="hi" x="455" y="66" width="30" height="26"/><rect class="c" x="485" y="66" width="30" height="26"/>
+    <rect class="c" x="395" y="92" width="30" height="26"/><rect class="c" x="425" y="92" width="30" height="26"/><rect class="c" x="455" y="92" width="30" height="26"/><rect class="c" x="485" y="92" width="30" height="26"/>
+  </g>
+  <text class="s" x="530" y="58">y = 0</text>
+  <text class="s" x="530" y="84">y = 1  ← (2, 1)</text>
+  <text class="s" x="530" y="110">y = 2</text>
+  <text x="395" y="146">텍셀의 2차원 격자이고, 포맷이 텍셀 하나의 모양을 정합니다.</text>
+  <text x="395" y="168">rgba8unorm: 채널 4개 × 8비트, 읽으면 0~1 실수</text>
+  <text x="395" y="190">rgba16float: 채널 4개 × 16비트 실수</text>
+  <text x="395" y="212">메모리 배치는 구현이 정합니다. 좌표로만 접근합니다.</text>
+  <text class="s" x="395" y="236">WGSL: textureLoad(src, vec2i(2, 1), 0)</text>
+  <text class="s" x="434" y="254">textureStore(dst, vec2u(2, 1), color)</text>
+</svg>

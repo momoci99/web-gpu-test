@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" id="lc06-pp" viewBox="0 0 680 350" width="680" height="350" font-family="sans-serif" font-size="13" fill="none" stroke="currentColor" stroke-width="1.5" role="img" aria-labelledby="lc06-pp-t">
+  <title id="lc06-pp-t">핑퐁 버퍼: 8패스 동안 a와 b를 번갈아 읽고 쓰며, 패스마다 디스패치 여러 개를 한 인코더에 기록</title>
+  <style>#lc06-pp{color:#1f2328}@media (prefers-color-scheme:dark){#lc06-pp{color:#e6edf3}}#lc06-pp text{fill:currentColor;stroke:none}</style>
+  <defs>
+    <marker id="lc06-pp-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="currentColor" stroke="none"/></marker>
+  </defs>
+  <text x="20" y="75" font-weight="bold">버퍼 a</text>
+  <text x="20" y="155" font-weight="bold">버퍼 b</text>
+  <line x1="78" y1="70" x2="660" y2="70" stroke-width="1" stroke-dasharray="3 4"/>
+  <line x1="78" y1="150" x2="660" y2="150" stroke-width="1" stroke-dasharray="3 4"/>
+  <line x1="92" y1="70" x2="144" y2="146" marker-end="url(#lc06-pp-a)"/>
+  <text x="118" y="40" text-anchor="middle" font-size="12">패스 0</text>
+  <text x="118" y="182" text-anchor="middle" font-size="11">비트 0~3</text>
+  <line x1="162" y1="150" x2="214" y2="74" marker-end="url(#lc06-pp-a)"/>
+  <text x="188" y="40" text-anchor="middle" font-size="12">패스 1</text>
+  <text x="188" y="182" text-anchor="middle" font-size="11">비트 4~7</text>
+  <line x1="232" y1="70" x2="284" y2="146" marker-end="url(#lc06-pp-a)"/>
+  <text x="258" y="40" text-anchor="middle" font-size="12">패스 2</text>
+  <text x="258" y="182" text-anchor="middle" font-size="11">비트 8~11</text>
+  <line x1="302" y1="150" x2="354" y2="74" marker-end="url(#lc06-pp-a)"/>
+  <text x="328" y="40" text-anchor="middle" font-size="12">패스 3</text>
+  <text x="328" y="182" text-anchor="middle" font-size="11">비트 12~15</text>
+  <line x1="372" y1="70" x2="424" y2="146" marker-end="url(#lc06-pp-a)"/>
+  <text x="398" y="40" text-anchor="middle" font-size="12">패스 4</text>
+  <text x="398" y="182" text-anchor="middle" font-size="11">비트 16~19</text>
+  <line x1="442" y1="150" x2="494" y2="74" marker-end="url(#lc06-pp-a)"/>
+  <text x="468" y="40" text-anchor="middle" font-size="12">패스 5</text>
+  <text x="468" y="182" text-anchor="middle" font-size="11">비트 20~23</text>
+  <line x1="512" y1="70" x2="564" y2="146" marker-end="url(#lc06-pp-a)"/>
+  <text x="538" y="40" text-anchor="middle" font-size="12">패스 6</text>
+  <text x="538" y="182" text-anchor="middle" font-size="11">비트 24~27</text>
+  <line x1="582" y1="150" x2="634" y2="74" marker-end="url(#lc06-pp-a)"/>
+  <text x="608" y="40" text-anchor="middle" font-size="12">패스 7</text>
+  <text x="608" y="182" text-anchor="middle" font-size="11">비트 28~31</text>
+  <text x="20" y="208" font-size="12">upload()가 입력을 a에 씁니다. 짝수 패스는 a → b, 홀수 패스는 b → a로 씁니다.</text>
+  <text x="20" y="226" font-size="12">패스가 8번(짝수)이라 결과는 a에 남고, copyBufferToBuffer로 읽기용 버퍼에 복사합니다.</text>
+  <text x="20" y="272" font-weight="bold">패스 하나 (n = 2^22)</text>
+  <rect x="180" y="256" width="82" height="44" rx="4" fill="currentColor" fill-opacity="0.08"/>
+  <text x="221" y="276" text-anchor="middle">count</text>
+  <text x="221" y="292" text-anchor="middle" font-size="11">hist 채우기</text>
+  <line x1="262" y1="278" x2="276" y2="278" marker-end="url(#lc06-pp-a)"/>
+  <rect x="278" y="256" width="82" height="44" rx="4" fill="currentColor" fill-opacity="0.08"/>
+  <text x="319" y="276" text-anchor="middle">scan</text>
+  <text x="319" y="292" text-anchor="middle" font-size="11">레벨 0</text>
+  <line x1="360" y1="278" x2="374" y2="278" marker-end="url(#lc06-pp-a)"/>
+  <rect x="376" y="256" width="82" height="44" rx="4" fill="currentColor" fill-opacity="0.08"/>
+  <text x="417" y="276" text-anchor="middle">scan</text>
+  <text x="417" y="292" text-anchor="middle" font-size="11">레벨 1</text>
+  <line x1="458" y1="278" x2="472" y2="278" marker-end="url(#lc06-pp-a)"/>
+  <rect x="474" y="256" width="82" height="44" rx="4" fill="currentColor" fill-opacity="0.08"/>
+  <text x="515" y="276" text-anchor="middle">add</text>
+  <text x="515" y="292" text-anchor="middle" font-size="11">레벨 0</text>
+  <line x1="556" y1="278" x2="570" y2="278" marker-end="url(#lc06-pp-a)"/>
+  <rect x="572" y="256" width="82" height="44" rx="4" fill="currentColor" fill-opacity="0.08"/>
+  <text x="613" y="276" text-anchor="middle">scatter</text>
+  <text x="613" y="292" text-anchor="middle" font-size="11">src → dst</text>
+  <text x="20" y="326" font-size="12">디스패치 5개 × 8패스 = 40개를 커맨드 인코더 하나에 기록하고 submit은 한 번만 합니다.</text>
+  <text x="20" y="344" font-size="12">앞 디스패치가 쓴 값은 다음 디스패치에서 보입니다. 그래서 단계 사이에 CPU가 끼어들 필요가 없습니다.</text>
+</svg>

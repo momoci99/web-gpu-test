@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 770 285" width="770" height="285" role="img" aria-label="CPU와 GPU의 시간축: submit 뒤에 GPU가 일하고 mapAsync가 끝을 알린다" font-family="system-ui, -apple-system, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif" font-size="13" fill="currentColor">
+<title>CPU와 GPU의 시간축: submit 뒤에 GPU가 일하고 mapAsync가 끝을 알린다</title>
+<style>svg{color:#1f2328}@media (prefers-color-scheme: dark){svg{color:#e6edf3}}.code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:11px}.small{font-size:11px}</style>
+<defs><marker id="arrow" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L8,4 L0,8 z" fill="currentColor"/></marker></defs>
+<text x="10" y="62" font-weight="600">CPU</text>
+<text x="10" y="78" class="small">JS 메인 스레드</text>
+<text x="10" y="192" font-weight="600">GPU</text>
+<text x="10" y="208" class="small">큐에서 실행</text>
+<path d="M120,105 L750,105 M120,225 L750,225" stroke="currentColor" stroke-opacity="0.3"/>
+<rect x="125" y="45" width="95" height="40" rx="4" fill="currentColor" fill-opacity="0.06" stroke="currentColor" stroke-width="1.2"/>
+<text x="172" y="70" text-anchor="middle" class="code">writeBuffer</text>
+<rect x="225" y="45" width="95" height="40" rx="4" fill="currentColor" fill-opacity="0.06" stroke="currentColor" stroke-width="1.2"/>
+<text x="272" y="70" text-anchor="middle">명령 기록</text>
+<rect x="325" y="45" width="60" height="40" rx="4" fill="currentColor" fill-opacity="0.06" stroke="currentColor" stroke-width="1.2"/>
+<text x="355" y="70" text-anchor="middle" class="code">submit</text>
+<rect x="395" y="45" width="185" height="40" rx="4" fill="none" stroke="currentColor" stroke-dasharray="4 3"/>
+<text x="487" y="63" text-anchor="middle" class="small">await mapAsync 동안</text>
+<text x="487" y="78" text-anchor="middle" class="small">다른 이벤트 처리 가능</text>
+<rect x="600" y="45" width="145" height="40" rx="4" fill="currentColor" fill-opacity="0.06" stroke="currentColor" stroke-width="1.2"/>
+<text x="672" y="63" text-anchor="middle" class="small">결과 읽기</text>
+<text x="672" y="78" text-anchor="middle" class="code">getMappedRange</text>
+<rect x="395" y="165" width="70" height="40" rx="4" fill="currentColor" fill-opacity="0.06" stroke="currentColor" stroke-width="1.2"/>
+<text x="430" y="183" text-anchor="middle" class="small">복사</text>
+<text x="430" y="198" text-anchor="middle" class="small">입력</text>
+<rect x="470" y="165" width="75" height="40" rx="4" fill="currentColor" fill-opacity="0.06" stroke="currentColor" stroke-width="1.2"/>
+<text x="507.5" y="183" text-anchor="middle" class="small">디스패치</text>
+<text x="507.5" y="198" text-anchor="middle" class="small">계산</text>
+<rect x="550" y="165" width="70" height="40" rx="4" fill="currentColor" fill-opacity="0.06" stroke="currentColor" stroke-width="1.2"/>
+<text x="585" y="183" text-anchor="middle" class="small">복사</text>
+<text x="585" y="198" text-anchor="middle" class="small">결과</text>
+<path d="M360,85 L405,163" fill="none" stroke="currentColor" stroke-width="1.4" marker-end="url(#arrow)"/>
+<text x="372" y="135" text-anchor="end" class="small">여기서부터 GPU가 일한다</text>
+<path d="M620,165 L655,87" fill="none" stroke="currentColor" stroke-width="1.4" marker-end="url(#arrow)"/>
+<text x="650" y="135" class="small">맵 완료, 프라미스 해결</text>
+<text x="255" y="30" text-anchor="middle" class="small">submit 전에는 GPU에서 아무 일도 일어나지 않는다</text>
+<path d="M120,255 L750,255" fill="none" stroke="currentColor" stroke-width="1.4" marker-end="url(#arrow)"/>
+<text x="750" y="275" text-anchor="end" class="small">시간</text>
+</svg>

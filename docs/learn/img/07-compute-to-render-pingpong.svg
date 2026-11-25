@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 230" width="720" height="230" role="img" aria-label="컴퓨트 패스 안에서 버퍼 A와 B를 번갈아 읽고 쓰고, 렌더 패스가 마지막에 쓴 버퍼를 읽는 그림">
+  <style>
+    text { font-family: sans-serif; font-size: 13px; fill: currentColor; }
+    .s { font-size: 11px; }
+    .box { fill: currentColor; fill-opacity: 0.06; stroke: currentColor; stroke-width: 1.5; }
+    .ln { stroke: currentColor; stroke-width: 1.5; fill: none; }
+    .dash { stroke-dasharray: 5 4; }
+  </style>
+  <defs>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
+    </marker>
+  </defs>
+
+  <!-- compute pass bracket -->
+  <path class="ln" d="M20,40 V30 H520 V40"/>
+  <text x="270" y="22" text-anchor="middle">컴퓨트 패스 1개 (스텝/프레임 = 2이면 디스패치 2번)</text>
+  <path class="ln" d="M560,40 V30 H700 V40"/>
+  <text x="630" y="22" text-anchor="middle">렌더 패스</text>
+
+  <!-- buffers -->
+  <rect class="box" x="20" y="70" width="120" height="50" rx="6"/>
+  <text x="80" y="92" text-anchor="middle">버퍼 A</text>
+  <text class="s" x="80" y="109" text-anchor="middle">bufs[0]</text>
+
+  <rect class="box" x="210" y="70" width="120" height="50" rx="6"/>
+  <text x="270" y="92" text-anchor="middle">버퍼 B</text>
+  <text class="s" x="270" y="109" text-anchor="middle">bufs[1]</text>
+
+  <rect class="box" x="400" y="70" width="120" height="50" rx="6"/>
+  <text x="460" y="92" text-anchor="middle">버퍼 A</text>
+  <text class="s" x="460" y="109" text-anchor="middle">bufs[0] = current()</text>
+
+  <rect class="box dash" x="560" y="70" width="140" height="50" rx="6"/>
+  <text x="630" y="92" text-anchor="middle">버텍스 셰이더</text>
+  <text class="s" x="630" y="109" text-anchor="middle">bodies[instance_index]</text>
+
+  <!-- arrows -->
+  <line class="ln" x1="140" y1="95" x2="208" y2="95" marker-end="url(#arr)"/>
+  <text class="s" x="175" y="62" text-anchor="middle">스텝 1</text>
+  <text class="s" x="175" y="140" text-anchor="middle">groups[0]</text>
+
+  <line class="ln" x1="330" y1="95" x2="398" y2="95" marker-end="url(#arr)"/>
+  <text class="s" x="365" y="62" text-anchor="middle">스텝 2</text>
+  <text class="s" x="365" y="140" text-anchor="middle">groups[1]</text>
+
+  <line class="ln dash" x1="520" y1="95" x2="558" y2="95" marker-end="url(#arr)"/>
+  <text class="s" x="540" y="140" text-anchor="middle">읽기만</text>
+
+  <!-- legend -->
+  <text x="20" y="180">각 스텝은 한쪽 버퍼를 src(read)로 읽고 다른 쪽을 dst(read_write)로 씁니다.</text>
+  <text x="20" y="202">스텝 중에 누구도 자기가 읽는 버퍼를 덮어쓰지 않으므로, 모든 스레드가 같은 "이전 상태"를 봅니다.</text>
+  <text x="20" y="224">CPU로 돌아오는 화살표는 없습니다. 위치는 GPU 메모리에만 있습니다.</text>
+</svg>

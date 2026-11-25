@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" id="lc04-blk" viewBox="0 0 620 280" width="620" height="280" font-family="sans-serif" font-size="13" fill="none" stroke="currentColor" stroke-width="1.5" role="img" aria-labelledby="lc04-blk-t">
+  <title id="lc04-blk-t">레지스터 블로킹: 스레드 하나가 C의 4×4 출력을 맡고, k마다 4개씩 읽은 값으로 곱셈-덧셈 16번</title>
+  <style>#lc04-blk{color:#1f2328}@media (prefers-color-scheme:dark){#lc04-blk{color:#e6edf3}}#lc04-blk text{fill:currentColor;stroke:none}</style>
+
+  <!-- left: 64x64 block, 16x16 threads -->
+  <text x="20" y="28" font-weight="bold">워크그룹 하나 = C의 64×64 조각</text>
+  <g stroke-width="0.5" stroke-opacity="0.45">
+    <path d="M30 50 H190 M30 60 H190 M30 70 H190 M30 80 H190 M30 90 H190 M30 100 H190 M30 110 H190 M30 120 H190 M30 130 H190 M30 140 H190 M30 150 H190 M30 160 H190 M30 170 H190 M30 180 H190 M30 190 H190 M30 200 H190 M30 210 H190"/>
+    <path d="M30 50 V210 M40 50 V210 M50 50 V210 M60 50 V210 M70 50 V210 M80 50 V210 M90 50 V210 M100 50 V210 M110 50 V210 M120 50 V210 M130 50 V210 M140 50 V210 M150 50 V210 M160 50 V210 M170 50 V210 M180 50 V210 M190 50 V210"/>
+  </g>
+  <rect x="30" y="50" width="160" height="160"/>
+  <rect x="80" y="80" width="10" height="10" fill="currentColor" stroke-width="1"/>
+  <text x="20" y="234" font-size="12">칸 하나 = 스레드 하나 (16×16칸)</text>
+  <text x="20" y="252" font-size="12">스레드 하나 = 출력 4×4</text>
+
+  <line x1="90" y1="85" x2="356" y2="94" stroke-width="1" stroke-dasharray="4 3"/>
+
+  <!-- right: outer product -->
+  <text x="400" y="28" font-size="12">rb[j]: tileB에서 4개</text>
+  <g>
+    <rect x="400" y="40" width="28" height="28" fill="currentColor" fill-opacity="0.2"/>
+    <rect x="428" y="40" width="28" height="28" fill="currentColor" fill-opacity="0.2"/>
+    <rect x="456" y="40" width="28" height="28" fill="currentColor" fill-opacity="0.2"/>
+    <rect x="484" y="40" width="28" height="28" fill="currentColor" fill-opacity="0.2"/>
+  </g>
+  <g>
+    <rect x="360" y="80" width="28" height="28" fill="currentColor" fill-opacity="0.2"/>
+    <rect x="360" y="108" width="28" height="28" fill="currentColor" fill-opacity="0.2"/>
+    <rect x="360" y="136" width="28" height="28" fill="currentColor" fill-opacity="0.2"/>
+    <rect x="360" y="164" width="28" height="28" fill="currentColor" fill-opacity="0.2"/>
+  </g>
+  <text x="250" y="140" font-size="12">ra[i]: tileA에서 4개</text>
+  <rect x="400" y="80" width="112" height="112"/>
+  <g stroke-width="0.8">
+    <path d="M428 80 V192 M456 80 V192 M484 80 V192 M400 108 H512 M400 136 H512 M400 164 H512"/>
+  </g>
+  <text x="456" y="210" text-anchor="middle" font-size="12">acc 16개 (레지스터)</text>
+  <text x="530" y="120" font-size="12">acc[i·4+j]</text>
+  <text x="530" y="136" font-size="12">+= ra[i]·rb[j]</text>
+  <text x="360" y="238" font-size="12">k 한 번마다: 공유 메모리 읽기 8번,</text>
+  <text x="360" y="256" font-size="12">곱셈-덧셈 16번</text>
+</svg>

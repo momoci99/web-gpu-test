@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 200" width="720" height="200" font-family="system-ui, sans-serif" font-size="13" fill="none" stroke="currentColor" stroke-width="1.5">
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0 0 L10 5 L0 10 z" fill="currentColor" stroke="none"/>
+    </marker>
+  </defs>
+  <rect x="10" y="40" width="120" height="110" rx="6"/>
+  <text x="70" y="62" text-anchor="middle" fill="currentColor" stroke="none" font-weight="600">스토리지 버퍼</text>
+  <text x="70" y="86" text-anchor="middle" fill="currentColor" stroke="none" font-family="ui-monospace, monospace" font-size="12">state[N]</text>
+  <text x="70" y="106" text-anchor="middle" fill="currentColor" stroke="none" font-family="ui-monospace, monospace" font-size="12">radius[N]</text>
+  <text x="70" y="126" text-anchor="middle" fill="currentColor" stroke="none" font-family="ui-monospace, monospace" font-size="12">color[N]</text>
+  <line x1="130" y1="95" x2="160" y2="95" marker-end="url(#a)"/>
+  <rect x="162" y="55" width="120" height="80" rx="6"/>
+  <text x="222" y="82" text-anchor="middle" fill="currentColor" stroke="none" font-weight="600">정점 셰이더</text>
+  <text x="222" y="104" text-anchor="middle" fill="currentColor" stroke="none" font-size="12">6 × N 번 실행</text>
+  <text x="222" y="122" text-anchor="middle" fill="currentColor" stroke="none" font-size="12">꼭짓점 위치 계산</text>
+  <line x1="282" y1="95" x2="312" y2="95" marker-end="url(#a)"/>
+  <rect x="314" y="55" width="110" height="80" rx="6" stroke-dasharray="5 4"/>
+  <text x="369" y="82" text-anchor="middle" fill="currentColor" stroke="none" font-weight="600">래스터화</text>
+  <text x="369" y="104" text-anchor="middle" fill="currentColor" stroke="none" font-size="12">삼각형이 덮는</text>
+  <text x="369" y="122" text-anchor="middle" fill="currentColor" stroke="none" font-size="12">픽셀 찾기</text>
+  <line x1="424" y1="95" x2="454" y2="95" marker-end="url(#a)"/>
+  <rect x="456" y="55" width="120" height="80" rx="6"/>
+  <text x="516" y="82" text-anchor="middle" fill="currentColor" stroke="none" font-weight="600">프래그먼트 셰이더</text>
+  <text x="516" y="104" text-anchor="middle" fill="currentColor" stroke="none" font-size="12">픽셀마다 실행</text>
+  <text x="516" y="122" text-anchor="middle" fill="currentColor" stroke="none" font-size="12">색과 투명도 계산</text>
+  <line x1="576" y1="95" x2="606" y2="95" marker-end="url(#a)"/>
+  <rect x="608" y="55" width="102" height="80" rx="6" stroke-dasharray="5 4"/>
+  <text x="659" y="82" text-anchor="middle" fill="currentColor" stroke="none" font-weight="600">블렌딩</text>
+  <text x="659" y="104" text-anchor="middle" fill="currentColor" stroke="none" font-size="12">캔버스 텍스처에</text>
+  <text x="659" y="122" text-anchor="middle" fill="currentColor" stroke="none" font-size="12">겹쳐 쓰기</text>
+  <text x="360" y="180" text-anchor="middle" fill="currentColor" stroke="none" font-size="12">실선: 직접 작성하는 WGSL 코드 · 점선: 파이프라인 설정으로 정하는 고정 단계</text>
+</svg>

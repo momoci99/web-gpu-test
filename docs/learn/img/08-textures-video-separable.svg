@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 250" width="720" height="250" role="img" aria-label="반경 2의 2차원 커널은 25탭이지만 가로 5탭과 세로 5탭 두 패스로 나누면 10탭이 되는 그림">
+  <style>
+    text { font-family: sans-serif; font-size: 13px; fill: currentColor; }
+    .s { font-size: 11px; }
+    .h { font-weight: bold; }
+    .t { fill: currentColor; fill-opacity: 0.2; stroke: currentColor; stroke-width: 1; }
+    .o { fill: none; stroke: currentColor; stroke-width: 0.6; stroke-opacity: 0.5; }
+    .ctr { fill: currentColor; fill-opacity: 0.6; stroke: currentColor; stroke-width: 1; }
+  </style>
+
+  <text class="h" x="20" y="24">2차원 커널, 반경 r = 2</text>
+  <g transform="translate(40,40)">
+    <rect class="t" x="0" y="0" width="28" height="28"/><rect class="t" x="28" y="0" width="28" height="28"/><rect class="t" x="56" y="0" width="28" height="28"/><rect class="t" x="84" y="0" width="28" height="28"/><rect class="t" x="112" y="0" width="28" height="28"/>
+    <rect class="t" x="0" y="28" width="28" height="28"/><rect class="t" x="28" y="28" width="28" height="28"/><rect class="t" x="56" y="28" width="28" height="28"/><rect class="t" x="84" y="28" width="28" height="28"/><rect class="t" x="112" y="28" width="28" height="28"/>
+    <rect class="t" x="0" y="56" width="28" height="28"/><rect class="t" x="28" y="56" width="28" height="28"/><rect class="ctr" x="56" y="56" width="28" height="28"/><rect class="t" x="84" y="56" width="28" height="28"/><rect class="t" x="112" y="56" width="28" height="28"/>
+    <rect class="t" x="0" y="84" width="28" height="28"/><rect class="t" x="28" y="84" width="28" height="28"/><rect class="t" x="56" y="84" width="28" height="28"/><rect class="t" x="84" y="84" width="28" height="28"/><rect class="t" x="112" y="84" width="28" height="28"/>
+    <rect class="t" x="0" y="112" width="28" height="28"/><rect class="t" x="28" y="112" width="28" height="28"/><rect class="t" x="56" y="112" width="28" height="28"/><rect class="t" x="84" y="112" width="28" height="28"/><rect class="t" x="112" y="112" width="28" height="28"/>
+  </g>
+  <text x="40" y="205">픽셀당 (2r+1)² = 25번 읽기</text>
+
+  <text class="h" x="300" y="24">가로 패스 (a → b)</text>
+  <g transform="translate(300,96)">
+    <rect class="t" x="0" y="0" width="28" height="28"/><rect class="t" x="28" y="0" width="28" height="28"/><rect class="ctr" x="56" y="0" width="28" height="28"/><rect class="t" x="84" y="0" width="28" height="28"/><rect class="t" x="112" y="0" width="28" height="28"/>
+  </g>
+  <text x="300" y="205">2r+1 = 5번</text>
+
+  <text class="h" x="510" y="24">세로 패스 (b → output)</text>
+  <g transform="translate(566,40)">
+    <rect class="t" x="0" y="0" width="28" height="28"/><rect class="t" x="0" y="28" width="28" height="28"/><rect class="ctr" x="0" y="56" width="28" height="28"/><rect class="t" x="0" y="84" width="28" height="28"/><rect class="t" x="0" y="112" width="28" height="28"/>
+  </g>
+  <text x="510" y="205">2r+1 = 5번</text>
+  <text x="460" y="110" text-anchor="middle" font-size="20">+</text>
+
+  <text x="20" y="238">합계 2(2r+1) = 10번. r = 16이면 1,089번이 66번이 됩니다. 비용은 여전히 반경에 비례합니다.</text>
+</svg>

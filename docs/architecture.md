@@ -107,7 +107,7 @@ One-shot compute timing (GEMM, sort) is a different measurement; phase 2 adds it
 
 ## Correctness check (src/demos/render-compare/verify.ts)
 
-`verifyComputeParity(caps)`: same seed, count 4096, run CPU `stepScene` and the WGSL compute pass 60 steps each, read back GPU state once, report max abs error; pass ≤ 1e-3. Exposed as a UI button and in the smoke script.
+`verifyComputeParity(caps)`: same seed, count 4096, run CPU `stepScene` and the WGSL compute pass 60 steps each, read back GPU state once, report max abs error; pass ≤ 1e-2 (a GPU may fuse `v * dt + p` into one rounding, about 1 ulp of drift per step). Exposed as a UI button and in the smoke script.
 
 ## UI (src/demos/render-compare/ui.ts)
 
@@ -168,7 +168,7 @@ interface Workload<I, O> { id; label; summary; sizes; smokeSizes; sizeLabel(n); 
 - GPU run: `t0` -> `upload` -> `encode` -> `submit` -> `onSubmittedWorkDone` (`t1`) -> `readback` (`t2`). `computeMs = t1 - t0`, `readbackMs = t2 - t1`, `e2eMs = t2 - t0`. `kernelMs` is the timestamp-query span from `first` to `last` (null when unsupported or quantized to 0).
 - `encode` also records the copy into the MAP_READ buffer (one submit per run), so `readback` only maps and decodes.
 - Timestamps: with one pass use `ts?.only` as that pass's `timestampWrites`; with several, `ts?.first` on the first pass and `ts?.last` on the last. Use `undefined` when `ts` is absent.
-- CPU run: wall time of `run`. `performance.now()` is quantized to about 0.1 ms, so the harness first doubles a batch until it takes at least 1 ms (cap 4096 runs) and times each sample as a batch average.
+- CPU run: wall time of `run`. `performance.now()` is quantized to about 0.1 ms, so the harness first runs the impl once untimed (a cold first call would end calibration early), then doubles a batch until it takes at least 2 ms (cap 2^20 runs) and times each sample as a batch average.
 - Repeat rule: one warm-up, then runs until at least 3 and (10 runs or more than 2 s of accumulated time). `verify` runs on the first and the last measured output only; the reported `check` is the first failure, else the last result.
 - `crossoverN(results)`: smallest n from which the best GPU e2e median beats the best CPU e2e median at every larger measured n (null if never). Sizes missing one kind are ignored.
 - `oneshot.test.ts` covers the stop rule, result assembly and `crossoverN` with fake impls and a fake device.
