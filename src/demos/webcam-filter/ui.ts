@@ -113,12 +113,12 @@ export function mountWebcamFilter(root: HTMLElement, caps: Capabilities): void {
     syncButtons();
   });
 
-  const startCamera = async () => {
+  const startCamera = async (): Promise<string> => {
     const { width, height } = resolution();
     closeSource();
     source = await openSource('camera', width, height);
     sourceSize = 'camera';
-    status.textContent = `카메라 시작됨 (${source.video.videoWidth}×${source.video.videoHeight})`;
+    return `카메라 시작됨 (${source.video.videoWidth}×${source.video.videoHeight})`;
   };
 
   const ensureSource = async (): Promise<VideoSource> => {
