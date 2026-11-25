@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 310" width="600" height="310" role="img" aria-label="입력 크기에 따른 CPU와 GPU 시간, 교차점 개념도" font-family="system-ui, -apple-system, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif" font-size="13" fill="currentColor">
+<title>입력 크기에 따른 CPU와 GPU 시간, 교차점 개념도</title>
+<style>svg{color:#1f2328}@media (prefers-color-scheme: dark){svg{color:#e6edf3}}.code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:11px}.small{font-size:11px}</style>
+<defs><marker id="arrow" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L8,4 L0,8 z" fill="currentColor"/></marker></defs>
+<path d="M70,270 L570,270" fill="none" stroke="currentColor" stroke-width="1.4" marker-end="url(#arrow)"/>
+<path d="M70,270 L70,25" fill="none" stroke="currentColor" stroke-width="1.4" marker-end="url(#arrow)"/>
+<text x="320" y="295" text-anchor="middle">입력 크기 n (로그 눈금)</text>
+<text x="0" y="0" text-anchor="middle" transform="translate(30 150) rotate(-90)">끝에서 끝까지 걸린 시간 (로그 눈금)</text>
+<text x="570" y="20" text-anchor="end" class="small">개념도, 실측 아님</text>
+<path d="M80,250 L550,60" fill="none" stroke="currentColor" stroke-width="2.2"/>
+<path d="M80,190 L150,189 Q178,189 205,175 L550,40" fill="none" stroke="currentColor" stroke-width="1.8" stroke-dasharray="2 4"/>
+<path d="M80,190 L250,189 Q300,187 340,175 L550,128" fill="none" stroke="currentColor" stroke-width="1.8" stroke-dasharray="8 5"/>
+<circle cx="231" cy="189" r="5" fill="none" stroke="currentColor" stroke-width="1.8"/>
+<text x="238" y="212">교차점</text>
+<text x="85" y="118" class="small">GPU의 고정 비용 (제출, 업로드, 읽기)</text>
+<path d="M110,124 L110,182" fill="none" stroke="currentColor" stroke-width="1" marker-end="url(#arrow)"/>
+<path d="M330,211 L360,211" stroke="currentColor" stroke-width="2"/>
+<text x="368" y="215" class="small">CPU: n에 비례</text>
+<path d="M330,229 L360,229" stroke="currentColor" stroke-width="2" stroke-dasharray="8 5"/>
+<text x="368" y="233" class="small">GPU, 연산 강도 높음 (GEMM형): 교차</text>
+<path d="M330,247 L360,247" stroke="currentColor" stroke-width="2" stroke-dasharray="2 4"/>
+<text x="368" y="251" class="small">GPU, 전송이 지배 (리덕션형): 교차 없음</text>
+</svg>

@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 710 265" width="710" height="265" role="img" aria-label="버퍼 흐름: 업로드, 계산, 복사, 맵" font-family="system-ui, -apple-system, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif" font-size="13" fill="currentColor">
+<title>버퍼 흐름: 업로드, 계산, 복사, 맵</title>
+<style>svg{color:#1f2328}@media (prefers-color-scheme: dark){svg{color:#e6edf3}}.code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:11px}.small{font-size:11px}</style>
+<defs><marker id="arrow" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L8,4 L0,8 z" fill="currentColor"/></marker></defs>
+<path d="M0,115 L700,115" stroke="currentColor" stroke-opacity="0.4" stroke-dasharray="5 4"/>
+<text x="10" y="108" class="small">CPU 쪽 (JS 메모리)</text>
+<text x="10" y="132" class="small">GPU 쪽 (GPUBuffer)</text>
+<rect x="20" y="25" width="150" height="50" rx="4" fill="currentColor" fill-opacity="0.06" stroke="currentColor" stroke-width="1.2"/>
+<text x="95" y="46" text-anchor="middle" class="code">input</text>
+<text x="95" y="63" text-anchor="middle" class="code">Float32Array</text>
+<rect x="130" y="145" width="200" height="60" rx="4" fill="currentColor" fill-opacity="0.06" stroke="currentColor" stroke-width="1.2"/>
+<text x="230" y="165" text-anchor="middle" class="code">storage</text>
+<text x="230" y="182" text-anchor="middle" class="code">STORAGE | COPY_DST</text>
+<text x="230" y="196" text-anchor="middle" class="code">| COPY_SRC</text>
+<rect x="495" y="145" width="170" height="60" rx="4" fill="currentColor" fill-opacity="0.06" stroke="currentColor" stroke-width="1.2"/>
+<text x="580" y="168" text-anchor="middle" class="code">readback</text>
+<text x="580" y="188" text-anchor="middle" class="code">MAP_READ | COPY_DST</text>
+<rect x="520" y="25" width="175" height="50" rx="4" fill="currentColor" fill-opacity="0.06" stroke="currentColor" stroke-width="1.2"/>
+<text x="607" y="46" text-anchor="middle" class="code">result</text>
+<text x="607" y="63" text-anchor="middle" class="code">Float32Array (복사본)</text>
+<path d="M95,75 L200,143" fill="none" stroke="currentColor" stroke-width="1.4" marker-end="url(#arrow)"/>
+<text x="150" y="100" class="code">① queue.writeBuffer</text>
+<path d="M330,175 L493,175" fill="none" stroke="currentColor" stroke-width="1.4" marker-end="url(#arrow)"/>
+<text x="412" y="167" text-anchor="middle" class="code">③ copyBufferToBuffer</text>
+<path d="M580,145 L610,77" fill="none" stroke="currentColor" stroke-width="1.4" marker-end="url(#arrow)"/>
+<text x="588" y="100" text-anchor="end" class="code">④ mapAsync, getMappedRange</text>
+<path d="M265,205 C265,240 195,240 195,207" fill="none" stroke="currentColor" stroke-width="1.4" marker-end="url(#arrow)"/>
+<text x="230" y="252" text-anchor="middle" class="code">② 컴퓨트 패스: data[i] = data[i] * 2</text>
+</svg>
