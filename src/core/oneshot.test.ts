@@ -85,20 +85,20 @@ describe('shouldStop', () => {
 describe('implApplies', () => {
   it('respects maxN', () => {
     const impl: CpuImpl<number, Out> = { kind: 'cpu', id: 'c', label: 'c', maxN: 100, run: (x) => x };
-    expect(implApplies(impl as never, 100)).toBe(true);
-    expect(implApplies(impl as never, 101)).toBe(false);
-    expect(implApplies({ ...impl, maxN: undefined } as never, 1e9)).toBe(true);
+    expect(implApplies(impl, 100)).toBe(true);
+    expect(implApplies(impl, 101)).toBe(false);
+    expect(implApplies({}, 1e9)).toBe(true);
   });
 });
 
 describe('runOneShot with a cpu impl', () => {
   const cpu = (run: (x: number) => Out): CpuImpl<number, Out> => ({ kind: 'cpu', id: 'cpu-fake', label: 'cpu', run });
 
-  it('runs a warm-up plus 10 measured runs and assembles the result', async () => {
+  it('runs 10 timed samples (each a batch average) and assembles the result', async () => {
     let calls = 0;
     const impl = cpu((x) => (calls++, x * 2));
     const r = await runOneShot(workload([impl]), impl, 5, 5, { device: null });
-    expect(calls).toBe(11);
+    expect(calls).toBeGreaterThan(10);
     expect(r).toMatchObject({ workloadId: 'fake', implId: 'cpu-fake', kind: 'cpu', n: 5, runs: 10, setupMs: null });
     expect(r.compute).toBeNull();
     expect(r.readback).toBeNull();
@@ -113,10 +113,16 @@ describe('runOneShot with a cpu impl', () => {
     expect(r.check.ok).toBe(false);
   });
 
-  it('keeps a failure seen on any verified run', async () => {
-    let calls = 0;
-    const impl = cpu((x) => (++calls === 2 ? 0 : x * 2));
-    const r = await runOneShot(workload([impl]), impl, 4, 4, { device: null });
+  it('verifies the first and the last measured output only, and reports the first failure', async () => {
+    const impl = cpu((x) => x * 2);
+    const seen: number[] = [];
+    let verifies = 0;
+    const w = workload([impl], (input, out) => {
+      seen.push(out);
+      return { ok: ++verifies !== 2, detail: `${input}` };
+    });
+    const r = await runOneShot(w, impl, 4, 4, { device: null });
+    expect(verifies).toBe(2);
     expect(r.check.ok).toBe(false);
   });
 

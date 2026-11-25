@@ -45,3 +45,7 @@ th:first-child, td:first-child { text-align: left; }
 .card { display: flex; flex-direction: column; gap: 4px; padding: 12px 16px; text-decoration: none; color: inherit; border: 1px solid color-mix(in srgb, currentColor 30%, transparent); }
 .card:hover { background: color-mix(in srgb, currentColor 8%, transparent); }
 .card span { opacity: 0.75; font-size: 0.9rem; }
+
+.checks { display: flex; flex-wrap: wrap; gap: 4px 16px; }
+.checks label.disabled { opacity: 0.6; }
+.crossover { font-weight: 600; }

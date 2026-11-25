@@ -57,6 +57,7 @@ export interface Workload<I, O> {
 
 // Impls are heterogeneous across workloads, so the discovery layer holds them with erased types.
 export type AnyWorkload = Workload<any, any>;
+export type AnyImpl = Impl<any, any>;
 
 export interface OneShotResult {
   workloadId: string;
@@ -86,7 +87,7 @@ export function shouldStop(runs: number, totalMs: number): boolean {
   return runs >= MIN_RUNS && (runs >= MAX_RUNS || totalMs > BUDGET_MS);
 }
 
-export function implApplies(impl: Impl<never, never>, n: number): boolean {
+export function implApplies(impl: { maxN?: number }, n: number): boolean {
   return impl.maxN === undefined || n <= impl.maxN;
 }
 
@@ -152,10 +153,25 @@ export interface OneShotEnv {
   device: GPUDevice | null;
 }
 
-function runCpu<I, O>(impl: CpuImpl<I, O>, input: I): { sample: RunSample; output: O } {
+const CALIBRATE_MS = 1;
+const MAX_BATCH = 4096;
+
+/** performance.now() is quantized (about 0.1 ms), so a CPU run is timed as a batch of `batch` runs averaged. */
+function calibrateBatch<I, O>(impl: CpuImpl<I, O>, input: I): number {
+  let batch = 1;
+  for (;;) {
+    const t0 = performance.now();
+    for (let i = 0; i < batch; i++) impl.run(input);
+    if (performance.now() - t0 >= CALIBRATE_MS || batch >= MAX_BATCH) return batch;
+    batch *= 2;
+  }
+}
+
+function runCpu<I, O>(impl: CpuImpl<I, O>, input: I, batch: number): { sample: RunSample; output: O } {
   const t0 = performance.now();
-  const output = impl.run(input);
-  return { sample: { e2e: performance.now() - t0 }, output };
+  let output = impl.run(input);
+  for (let i = 1; i < batch; i++) output = impl.run(input);
+  return { sample: { e2e: (performance.now() - t0) / batch }, output };
 }
 
 async function runGpuOnce<O>(device: GPUDevice, run: GpuRun<O>, timer: GpuTimer | null): Promise<{ sample: RunSample; output: O }> {
@@ -176,7 +192,7 @@ async function runGpuOnce<O>(device: GPUDevice, run: GpuRun<O>, timer: GpuTimer 
 }
 
 /**
- * One warm-up run, then runs until `shouldStop`. The first and the last measured outputs go through `workload.verify`;
+ * One warm-up run (CPU: a doubling batch calibration), then runs until `shouldStop`. The first and the last measured outputs go through `workload.verify`;
  * the check reported is the first failure, else the last result.
  */
 export async function runOneShot<I, O>(
@@ -193,11 +209,11 @@ export async function runOneShot<I, O>(
   let totalMs = 0;
 
   if (impl.kind === 'cpu') {
-    runCpu(impl, input);
+    const batch = calibrateBatch(impl, input);
     while (!shouldStop(samples.length, totalMs)) {
-      const { sample, output } = runCpu(impl, input);
+      const { sample, output } = runCpu(impl, input, batch);
       samples.push(sample);
-      totalMs += sample.e2e;
+      totalMs += sample.e2e * batch;
       if (samples.length === 1 || shouldStop(samples.length, totalMs)) record(output);
     }
   } else {
