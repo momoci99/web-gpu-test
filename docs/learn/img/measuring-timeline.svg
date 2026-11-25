@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 300" width="700" height="300" font-family="system-ui, sans-serif" font-size="13" fill="none" stroke="currentColor" stroke-width="1.5">
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M0 0 L10 5 L0 10 z" fill="currentColor" stroke="none"/>
+    </marker>
+    <marker id="b" viewBox="0 0 10 10" refX="1" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M10 0 L0 5 L10 10 z" fill="currentColor" stroke="none"/>
+    </marker>
+  </defs>
+  <!-- scale: t ms -> x = 110 + t * 3.11 ; frames at 0, 16.7, 33.3 ; GPU 54 ms per frame -->
+  <text x="10" y="64" fill="currentColor" stroke="none" font-weight="600">CPU</text>
+  <text x="10" y="80" fill="currentColor" stroke="none" font-size="11">(rAF 콜백)</text>
+  <line x1="110" y1="70" x2="680" y2="70" stroke-width="1" stroke-dasharray="2 4"/>
+  <rect x="110" y="58" width="10" height="24" fill="currentColor" stroke="none"/>
+  <rect x="162" y="58" width="10" height="24" fill="currentColor" stroke="none"/>
+  <rect x="214" y="58" width="10" height="24" fill="currentColor" stroke="none"/>
+  <text x="115" y="50" text-anchor="middle" fill="currentColor" stroke="none" font-size="11">1</text>
+  <text x="167" y="50" text-anchor="middle" fill="currentColor" stroke="none" font-size="11">2</text>
+  <text x="219" y="50" text-anchor="middle" fill="currentColor" stroke="none" font-size="11">3</text>
+  <line x1="120" y1="36" x2="162" y2="36" stroke-width="1" marker-start="url(#b)" marker-end="url(#a)"/>
+  <text x="141" y="28" text-anchor="middle" fill="currentColor" stroke="none" font-size="11">16.7 ms</text>
+  <text x="230" y="40" fill="currentColor" stroke="none" font-size="11">rAF 간격은 매번 16.7 ms로 정상처럼 보입니다</text>
+  <!-- settle wait -->
+  <line x1="226" y1="70" x2="612" y2="70" stroke-width="2" stroke-dasharray="6 4"/>
+  <text x="420" y="94" text-anchor="middle" fill="currentColor" stroke="none" font-size="11">await settle()  (onSubmittedWorkDone)</text>
+  <!-- GPU row -->
+  <text x="10" y="164" fill="currentColor" stroke="none" font-weight="600">GPU</text>
+  <rect x="110" y="150" width="168" height="26" rx="3"/>
+  <rect x="278" y="150" width="168" height="26" rx="3"/>
+  <rect x="446" y="150" width="168" height="26" rx="3"/>
+  <text x="194" y="168" text-anchor="middle" fill="currentColor" stroke="none" font-size="12">프레임 1 (54 ms)</text>
+  <text x="362" y="168" text-anchor="middle" fill="currentColor" stroke="none" font-size="12">프레임 2</text>
+  <text x="530" y="168" text-anchor="middle" fill="currentColor" stroke="none" font-size="12">프레임 3</text>
+  <!-- submit arrows -->
+  <line x1="167" y1="82" x2="278" y2="148" stroke-width="1" marker-end="url(#a)"/>
+  <line x1="219" y1="82" x2="446" y2="148" stroke-width="1" marker-end="url(#a)"/>
+  <text x="300" y="128" fill="currentColor" stroke="none" font-size="11">제출된 프레임은 큐에서 기다립니다</text>
+  <!-- t0 / t1 -->
+  <line x1="110" y1="196" x2="110" y2="232" stroke-width="1"/>
+  <line x1="614" y1="186" x2="614" y2="232" stroke-width="1"/>
+  <text x="110" y="248" text-anchor="middle" fill="currentColor" stroke="none" font-family="ui-monospace, monospace" font-size="12">t0</text>
+  <text x="614" y="248" text-anchor="middle" fill="currentColor" stroke="none" font-family="ui-monospace, monospace" font-size="12">t1</text>
+  <line x1="112" y1="222" x2="612" y2="222" stroke-width="1" marker-start="url(#b)" marker-end="url(#a)"/>
+  <text x="362" y="214" text-anchor="middle" fill="currentColor" stroke="none" font-size="12">effectiveFrameMs = (t1 − t0) / 3 ≈ 54 ms</text>
+  <text x="350" y="284" text-anchor="middle" fill="currentColor" stroke="none" font-size="12">프레임 3개만 그린 예시입니다. 실제 측정은 120프레임이고, 큐에 쌓인 시간이 그만큼 커집니다.</text>
+</svg>
