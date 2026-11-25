@@ -66,8 +66,6 @@ export function mountComputeBench(root: HTMLElement, all: AnyWorkload[], device:
     { label: '처리량' },
     { label: '검증', numeric: false },
   ]);
-  table.el.style.overflowX = 'auto';
-  const tableFix = el('style', { textContent: '@media (max-width: 640px) { table.results tbody th { white-space: normal; max-width: 8.5rem; min-width: 6rem; } }' });
   const runBtn = button({ label: '전체 스윕 실행', variant: 'primary', onClick: () => void runFull() });
   runBtn.dataset.role = 'run-full';
   const previewBtn = button({ label: '빠른 미리보기 다시 실행', onClick: () => void runPreview() });
@@ -233,7 +231,7 @@ export function mountComputeBench(root: HTMLElement, all: AnyWorkload[], device:
         chapterLinks,
         pickHost,
       ),
-      section({ title: '결과' }, crossText, table.el, tableFix, capsPanel(caps).el),
+      section({ title: '결과' }, crossText, table.el, capsPanel(caps).el),
       callout('측정 한계', [el('ul', {}, ...LIMITS_NOTES.map((t) => el('li', { textContent: t })))]),
       callout('해보기', '워크로드를 행렬 곱(GEMM)으로 바꾸고 전체 스윕을 실행해 보세요. N이 커질수록 GPU 선이 CPU 선 아래로 내려가는 지점이 교차점입니다. 점선(커널만)과 실선(e2e)의 간격이 업로드와 읽기 비용입니다.'),
     ),

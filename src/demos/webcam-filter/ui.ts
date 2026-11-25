@@ -96,8 +96,6 @@ export function mountWebcamFilter(root: HTMLElement, caps: Capabilities): { susp
     { label: '드롭 비율' },
     { label: '실효 프레임 시간', unit: 'ms' },
   ]);
-  table.el.style.overflowX = 'auto';
-  const tableFix = el('style', { textContent: '@media (max-width: 640px) { table.results tbody th { white-space: normal; max-width: 8.5rem; min-width: 6rem; } }' });
   const plot = chart({
     title: '블러 반경 대비 실효 프레임 시간',
     xLabel: '블러 반경',
@@ -298,7 +296,7 @@ export function mountWebcamFilter(root: HTMLElement, caps: Capabilities): { susp
         controls(runBtn, sweepBtn, maxBtn, verifyBtn),
         state.el,
       ),
-      section({ title: '결과' }, maxList, table.el, tableFix, plot.el, verifyList, env.el),
+      section({ title: '결과' }, maxList, table.el, plot.el, verifyList, env.el),
       callout('측정 한계', [el('ul', {}, ...LIMITS_NOTES.map((t) => el('li', { textContent: t })))]),
       callout('해보기', '필터를 블러로 두고 반경 스윕을 실행해 보세요. 반경이 커질수록 CPU의 실효 프레임 시간은 가파르게 오르는데 GPU는 얼마나 평평한지 확인합니다. 웹캠이 있다면 같은 설정을 카메라로 반복해 보세요.'),
     ),

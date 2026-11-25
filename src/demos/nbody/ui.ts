@@ -75,8 +75,6 @@ export function mountNBody(root: HTMLElement, caps: Capabilities): { suspendPrev
     { label: 'gpu 중앙값', unit: 'ms' },
     { label: '드롭 비율' },
   ]);
-  table.el.style.overflowX = 'auto';
-  const tableFix = el('style', { textContent: '@media (max-width: 640px) { table.results tbody th { white-space: normal; max-width: 8.5rem; min-width: 6rem; } }' });
   const maxList = el('ul', { className: 'max-list' });
   const verifyList = el('ul', { className: 'max-list' });
   const plot = chart({
@@ -197,7 +195,7 @@ export function mountNBody(root: HTMLElement, caps: Capabilities): { suspendPrev
         controls(countField.el, stepsField.el, runBtn, rampBtn, verifyBtn),
         state.el,
       ),
-      section({ title: '결과' }, maxList, table.el, tableFix, plot.el, env.el),
+      section({ title: '결과' }, maxList, table.el, plot.el, env.el),
       section(
         { title: '정확도 검증' },
         el('p', { textContent: `같은 시드에서 N=${VERIFY_COUNT}, ${VERIFY_STEPS}스텝을 CPU(f64 누산)와 각 GPU 커널(f32)로 돌려 최대 절대 위치 오차를 비교합니다. 허용 오차는 ${VERIFY_TOLERANCE} px입니다.` }),

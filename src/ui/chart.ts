@@ -1,3 +1,4 @@
+import { compactNumber } from './format';
 import uPlot from 'uplot';
 import 'uplot/dist/uPlot.min.css';
 import { el } from './dom';
@@ -52,13 +53,17 @@ export function chart(spec: ChartSpec): Chart {
       {
         width,
         height: spec.height ?? (width < MOBILE ? 260 : 340),
+        padding: [12, 44, 0, 0],
         legend: { show: true, live: false },
         cursor: { points: { size: 7 } },
         scales: {
           x: { distr: spec.logX ? 3 : 1, time: false },
           y: spec.logY ? { distr: 3 } : { range: (_u, _min, max) => [0, Math.max(max * 1.1, 1e-9)] },
         },
-        axes: [axis(spec.xLabel, 46), axis(spec.yLabel, width < MOBILE ? 56 : 64)],
+        axes: [
+          { ...axis(spec.xLabel, 46), ...(spec.logX ? { values: (_u: uPlot, splits: (number | null)[]) => splits.map((v) => (v == null ? '' : compactNumber(v))) } : {}) },
+          axis(spec.yLabel, width < MOBILE ? 56 : 64),
+        ],
         series: [
           {},
           ...spec.series.map((s) => ({
@@ -96,3 +101,4 @@ export function chart(spec: ChartSpec): Chart {
     },
   };
 }
+
