@@ -1,97 +1,122 @@
-import uPlot from 'uplot';
-import 'uplot/dist/uPlot.min.css';
 import type { Capabilities } from '../../core/capabilities';
-import { crossoverN, type AnyWorkload, type OneShotResult } from '../../core/oneshot';
+import { crossoverN, type AnyImpl, type AnyWorkload, type OneShotResult } from '../../core/oneshot';
+import { button, callout, capsPanel, chapterLink, chart, checkList, controls, el, page, resultsTable, section, seriesVar, slider, status, type SeriesToken } from '../../ui';
 import { implRunnable, sweep } from './sweep';
 
-const COLORS = ['#e4572e', '#17bebb', '#ffc914', '#76b041', '#7b5ea7', '#2e86ab'];
+const CHAPTER = '03-compute-reduction';
+const WORKLOAD_CHAPTERS: Record<string, { slug: string; label: string }> = {
+  reduction: { slug: '03-compute-reduction', label: '03 리덕션' },
+  gemm: { slug: '04-workgroup-memory', label: '04 행렬 곱(GEMM)' },
+  binning2d: { slug: '05-atomics', label: '05 2D 빈닝' },
+  'radix-sort': { slug: '06-multi-pass-sort', label: '06 기수 정렬' },
+};
 
 const LIMITS_NOTES = [
   'GPU e2e는 입력 업로드 + 커널 + 결과 읽기(mapAsync)를 모두 포함합니다. 작은 입력에서는 이 고정 비용이 계산 시간보다 커서 CPU가 이깁니다.',
-  '커널만(kernel) 시간은 timestamp-query로 잰 값입니다. e2e와의 차이가 업로드와 읽기 비용입니다. 데이터가 GPU에 계속 머무는 파이프라인이라면 이 비용은 나눠 갚게 됩니다.',
+  '커널만(점선) 시간은 timestamp-query로 잰 값입니다. e2e와의 차이가 업로드와 읽기 비용입니다. 데이터가 GPU에 계속 머무는 파이프라인이라면 이 비용은 나눠 갚게 됩니다.',
   'setup(파이프라인 컴파일, 버퍼 할당)은 e2e에 포함하지 않고 따로 표시합니다. 각 구현은 측정 전에 1회 워밍업합니다.',
   'CPU는 performance.now()의 해상도(약 0.1 ms)보다 짧게 끝나는 작은 N에서 여러 번을 묶어 평균낸 값을 1회로 칩니다. GPU 작은 N의 e2e도 이 해상도에 걸려 거칠게 나옵니다.',
   '각 (구현, N)은 최소 3회, 최대 10회(또는 합계 2초 초과 시 중단) 실행한 중앙값입니다. 검증(check)은 첫 실행과 마지막 실행의 출력에 적용합니다.',
   'Chrome은 WebGPU Developer Features 플래그가 꺼져 있으면 timestamp-query를 약 100 µs 단위로 양자화합니다.',
+  '미리보기는 가장 작은 N 몇 개만 잰 것이라 GPU가 불리한 구간만 보입니다. 교차점은 전체 스윕에서 확인합니다.',
 ];
 
-function el<K extends keyof HTMLElementTagNameMap>(tag: K, props: Partial<HTMLElementTagNameMap[K]> = {}, ...children: (Node | string)[]): HTMLElementTagNameMap[K] {
-  const node = Object.assign(document.createElement(tag), props);
-  node.append(...children);
-  return node;
-}
+const CPU_TOKENS: SeriesToken[] = ['cpu-a', 'cpu-b'];
+const GPU_TOKENS: SeriesToken[] = ['gpu-a', 'gpu-b', 'gpu-c'];
 
 const f = (x: number, d = 3) => x.toFixed(d);
 const fOpt = (s: { median: number } | null, d = 3) => (s ? f(s.median, d) : '-');
 
-export function mountComputeBench(root: HTMLElement, all: AnyWorkload[], device: GPUDevice | null, caps: Capabilities): void {
-  let workload = all[0]!;
+export interface ComputeBenchControl {
+  /** Resolves once any running preview sweep has finished, and stops new ones from starting. */
+  suspendPreview(): Promise<void>;
+  resumePreview(): void;
+}
+
+export function mountComputeBench(root: HTMLElement, all: AnyWorkload[], device: GPUDevice | null, caps: Capabilities): ComputeBenchControl {
+  let workload = all.find((w) => w.id === 'reduction') ?? all[0]!;
   let results: OneShotResult[] = [];
-  let plot: uPlot | null = null;
+  let mode: 'preview' | 'full' = 'preview';
   let busy = false;
+  let suspended = false;
+  let generation = 0;
+  let previewRun: Promise<void> = Promise.resolve();
+  let picks = checkList([]);
+  let sizeSlider = slider({ label: '', min: 1, max: 1, value: 1 });
+  let plot = chart({ xLabel: '', yLabel: '', series: [] });
 
-  const select = el('select', {}, ...all.map((w) => el('option', { value: w.id, textContent: w.label })));
+  const timestamps = caps.webgpu.kind === 'available' && caps.webgpu.timestampQuery;
+  const select = el('select', { id: 'workload-select' }, ...all.map((w) => el('option', { value: w.id, textContent: w.label })));
+  const selectField = el('label', { className: 'field' }, el('span', { className: 'field-label', textContent: '워크로드' }), select);
   const summary = el('p');
-  const sizeBox = el('div', { className: 'checks' });
-  const implBox = el('div', { className: 'checks' });
-  const runBtn = el('button', { textContent: '실행' });
-  const status = el('p', { className: 'status', textContent: '준비됨' });
+  const chapterLinks = el('p', { className: 'workload-chapters' });
+  const pickHost = el('div');
+  const sizeHost = el('span');
+  const plotHost = el('div');
+  const state = status();
   const crossText = el('p', { className: 'crossover' });
-  const tableHost = el('div', { className: 'table' });
-  const chartHost = el('div', { className: 'chart' });
+  const table = resultsTable([
+    { label: '구현', numeric: false },
+    { label: 'N' },
+    { label: 'e2e 중앙값', unit: 'ms' },
+    { label: 'compute', unit: 'ms' },
+    { label: 'readback', unit: 'ms' },
+    { label: 'kernel', unit: 'ms' },
+    { label: 'setup', unit: 'ms' },
+    { label: '처리량' },
+    { label: '검증', numeric: false },
+  ]);
+  table.el.style.overflowX = 'auto';
+  const tableFix = el('style', { textContent: '@media (max-width: 640px) { table.results tbody th { white-space: normal; max-width: 8.5rem; min-width: 6rem; } }' });
+  const runBtn = button({ label: '전체 스윕 실행', variant: 'primary', onClick: () => void runFull() });
+  runBtn.dataset.role = 'run-full';
+  const previewBtn = button({ label: '빠른 미리보기 다시 실행', onClick: () => void runPreview() });
+  previewBtn.dataset.role = 'run-preview';
 
-  const checked = (box: HTMLElement) => [...box.querySelectorAll<HTMLInputElement>('input:checked')].map((i) => i.value);
+  const selectedImpls = (): AnyImpl[] => workload.impls.filter((i) => picks.selected().has(i.id));
   const syncButtons = () => {
-    runBtn.disabled = busy || checked(sizeBox).length === 0 || checked(implBox).length === 0;
+    const none = picks.selected().size === 0;
+    runBtn.disabled = busy || none;
+    previewBtn.disabled = busy || none || suspended;
     select.disabled = busy;
+    sizeSlider.input.disabled = busy;
   };
 
-  const checkbox = (value: string, text: string, on: boolean, disabledReason: string | null = null) => {
-    const input = el('input', { type: 'checkbox', value, checked: on && disabledReason === null, disabled: disabledReason !== null });
-    input.addEventListener('change', syncButtons);
-    return el('label', { className: disabledReason ? 'disabled' : '', title: disabledReason ?? '' }, input, ` ${text}`);
+  const tokenFor = (impl: AnyImpl): SeriesToken => {
+    const same = workload.impls.filter((i) => i.kind === impl.kind);
+    const tokens = impl.kind === 'cpu' ? CPU_TOKENS : GPU_TOKENS;
+    return tokens[same.indexOf(impl) % tokens.length]!;
   };
 
-  const loadWorkload = () => {
-    workload = all.find((w) => w.id === select.value)!;
-    summary.textContent = workload.summary;
-    sizeBox.replaceChildren(...workload.sizes.map((n) => checkbox(String(n), workload.sizeLabel(n), true)));
-    implBox.replaceChildren(
-      ...workload.impls.map((i) =>
-        checkbox(i.id, i.label, true, implRunnable(i, device) ? null : caps.webgpu.kind === 'unavailable' ? caps.webgpu.reason : 'GPUDevice를 만들 수 없습니다'),
-      ),
-    );
-    results = [];
-    refreshOutputs();
-    syncButtons();
+  const buildPlot = () => {
+    const series = workload.impls.map((i) => ({ label: i.label, color: tokenFor(i) }));
+    const kernelSeries = timestamps ? workload.impls.filter((i) => i.kind === 'gpu').map((i) => ({ label: `${i.label} 커널만`, color: tokenFor(i), dashed: true })) : [];
+    plot = chart({
+      title: 'N 대비 e2e 중앙값',
+      xLabel: '입력 크기 N (로그)',
+      yLabel: '시간 중앙값 (ms, 로그)',
+      logX: true,
+      logY: true,
+      series: [...series, ...kernelSeries],
+      emptyText: '결과를 기다리는 중입니다. 작은 N 몇 개를 자동으로 재는 빠른 미리보기가 곧 이 자리에 그려집니다.',
+    });
+    plotHost.replaceChildren(plot.el);
   };
 
   const refreshOutputs = () => {
-    const header = ['구현', 'N', 'e2e 중앙값 (ms)', 'e2e p95', '실행 횟수', 'compute (ms)', 'readback (ms)', 'kernel (ms)', 'setup (ms)', '처리량', 'check'];
     const unit = workload.work?.(1).unit;
-    const rows = results.map((r) => {
-      const impl = workload.impls.find((i) => i.id === r.implId);
-      return [
-        impl?.label ?? r.implId,
+    table.setRows(
+      results.map((r) => [
+        workload.impls.find((i) => i.id === r.implId)?.label ?? r.implId,
         workload.sizeLabel(r.n),
         f(r.e2e.median),
-        f(r.e2e.p95),
-        String(r.runs),
         fOpt(r.compute),
         fOpt(r.readback),
         fOpt(r.kernel),
         r.setupMs === null ? '-' : f(r.setupMs, 1),
         r.throughput === null ? '-' : `${r.throughput.toPrecision(3)} ${unit}/s`,
-        `${r.check.ok ? '통과' : '실패'}: ${r.check.detail}`,
-      ];
-    });
-    tableHost.replaceChildren(
-      el(
-        'table',
-        {},
-        el('thead', {}, el('tr', {}, ...header.map((h) => el('th', { textContent: h })))),
-        el('tbody', {}, ...rows.map((cells) => el('tr', {}, ...cells.map((c) => el('td', { textContent: c }))))),
-      ),
+        r.check.ok ? '통과' : `실패: ${r.check.detail}`,
+      ]),
     );
 
     const kinds = new Set(results.map((r) => r.kind));
@@ -100,83 +125,133 @@ export function mountComputeBench(root: HTMLElement, all: AnyWorkload[], device:
       const x = crossoverN(results);
       crossText.textContent = x === null ? '측정 범위에서 교차 없음' : `이 크기부터 GPU가 CPU보다 빠름: n ≈ ${workload.sizeLabel(x)}`;
     }
-    drawChart();
-  };
 
-  const drawChart = () => {
-    plot?.destroy();
-    plot = null;
-    if (results.length === 0) return chartHost.replaceChildren();
-    const ids = workload.impls.map((i) => i.id).filter((id) => results.some((r) => r.implId === id));
     const xs = [...new Set(results.map((r) => r.n))].sort((a, b) => a - b);
     const at = (id: string, n: number) => results.find((r) => r.implId === id && r.n === n);
-    const kernelIds = ids.filter((id) => results.some((r) => r.implId === id && r.kernel));
-    const series: uPlot.Series[] = [{}];
-    const data: (number | null)[][] = [xs];
-    ids.forEach((id, i) => {
-      series.push({ label: workload.impls.find((x) => x.id === id)!.label, stroke: COLORS[i % COLORS.length], width: 2, points: { show: true }, spanGaps: true });
-      data.push(xs.map((n) => at(id, n)?.e2e.median ?? null));
-    });
-    kernelIds.forEach((id) => {
-      const i = ids.indexOf(id);
-      series.push({ label: `${workload.impls.find((x) => x.id === id)!.label} 커널만`, stroke: COLORS[i % COLORS.length], width: 1.5, dash: [6, 4], spanGaps: true });
-      data.push(xs.map((n) => at(id, n)?.kernel?.median ?? null));
-    });
-    plot = new uPlot(
-      {
-        width: 800,
-        height: 360,
-        title: 'N 대비 e2e 중앙값 (ms, 로그-로그)',
-        scales: { x: { distr: 3, time: false }, y: { distr: 3 } },
-        axes: [{ label: '입력 크기 N' }, { label: '시간 중앙값 (ms)' }],
-        series,
-      },
-      data as uPlot.AlignedData,
-      chartHost,
-    );
+    plot.setData(xs, [
+      ...workload.impls.map((i) => xs.map((n) => at(i.id, n)?.e2e.median ?? null)),
+      ...(timestamps ? workload.impls.filter((i) => i.kind === 'gpu').map((i) => xs.map((n) => at(i.id, n)?.kernel?.median ?? null)) : []),
+    ]);
+    const title = plot.el.querySelector('.chart-title');
+    if (title) title.textContent = mode === 'preview' ? `빠른 미리보기: 작은 N ${workload.smokeSizes.length}개의 e2e 중앙값` : 'N 대비 e2e 중앙값 (전체 스윕)';
   };
 
-  runBtn.addEventListener('click', async () => {
-    busy = true;
+  const loadWorkload = () => {
+    generation++;
+    workload = all.find((w) => w.id === select.value)!;
+    summary.textContent = workload.summary;
+    const link = WORKLOAD_CHAPTERS[workload.id];
+    chapterLinks.replaceChildren(...(link ? ['이 워크로드의 원리: ', chapterLink(link.slug, link.label)] : []));
+    picks = checkList(
+      workload.impls.map((i) => ({
+        id: i.id,
+        label: i.label,
+        swatch: seriesVar(tokenFor(i)),
+        disabledReason: implRunnable(i, device) ? null : caps.webgpu.kind === 'unavailable' ? caps.webgpu.reason : 'GPUDevice를 만들 수 없습니다',
+      })),
+      syncButtons,
+    );
+    pickHost.replaceChildren(picks.el);
+    sizeSlider = slider({
+      label: '전체 스윕의 최대 입력 크기',
+      min: 1,
+      max: workload.sizes.length,
+      value: workload.sizes.length,
+      format: (v) => workload.sizeLabel(workload.sizes[v - 1]!),
+    });
+    sizeHost.replaceChildren(sizeSlider.el);
+    results = [];
+    mode = 'preview';
+    buildPlot();
+    refreshOutputs();
     syncButtons();
+  };
+
+  const execute = async (label: string, sizes: readonly number[], nextMode: 'preview' | 'full') => {
+    const mine = ++generation;
+    busy = true;
+    mode = nextMode;
     results = [];
     refreshOutputs();
+    syncButtons();
+    state.set(`${label} 측정 중`);
     try {
-      const sizes = checked(sizeBox).map(Number);
-      const impls = workload.impls.filter((i) => checked(implBox).includes(i.id));
-      await sweep(workload, sizes, impls, device, (r) => {
+      await sweep(workload, sizes, selectedImpls(), device, (r) => {
+        if (mine !== generation) return;
         results.push(r);
-        status.textContent = `${workload.sizeLabel(r.n)} 측정 완료`;
+        state.set(`${label}: ${workload.sizeLabel(r.n)} 측정 완료`);
         refreshOutputs();
       });
+      if (mine !== generation) return;
       const failed = results.filter((r) => !r.check.ok).length;
-      status.textContent = failed > 0 ? `완료, 검증 실패 ${failed}건` : '완료';
+      const done = nextMode === 'preview' ? '빠른 미리보기 완료. 작은 N만 잰 값이라 GPU가 불리하게 보입니다. 전체 스윕을 실행해 교차점을 찾아보세요.' : '전체 스윕 완료';
+      state.set(failed > 0 ? `${label} 완료, 검증 실패 ${failed}건` : done, failed > 0 ? 'error' : 'ok');
     } catch (err) {
-      status.textContent = `실패: ${String(err)}`;
+      state.set(`${label} 실패: ${String(err)}`, 'error');
     } finally {
-      busy = false;
+      if (mine === generation) busy = false;
       syncButtons();
     }
-  });
-  select.addEventListener('change', loadWorkload);
+  };
 
-  const gpu = caps.webgpu;
+  const runPreview = (): Promise<void> => {
+    if (suspended || document.hidden || busy || selectedImpls().length === 0) return previewRun;
+    previewRun = execute('빠른 미리보기', workload.smokeSizes, 'preview');
+    return previewRun;
+  };
+
+  const runFull = async () => {
+    await previewRun;
+    await execute('전체 스윕', workload.sizes.slice(0, sizeSlider.value()), 'full');
+  };
+
+  select.addEventListener('change', () => {
+    loadWorkload();
+    void runPreview();
+  });
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden && results.length === 0) void runPreview();
+  });
+
   root.replaceChildren(
-    el('h1', { textContent: '컴퓨트 벤치: CPU 대 GPU 교차점' }),
-    el('p', { textContent: `WebGPU: ${gpu.kind === 'available' ? `사용 가능 (${gpu.adapterInfo}), timestamp-query ${gpu.timestampQuery ? '지원' : '미지원'}` : `사용 불가 (${gpu.reason})`}` }),
-    el('div', { className: 'controls' }, el('label', {}, '워크로드 ', select), runBtn),
-    summary,
-    el('h2', { textContent: '구현' }),
-    implBox,
-    el('h2', { textContent: '입력 크기' }),
-    sizeBox,
-    status,
-    el('h2', { textContent: '결과' }),
-    crossText,
-    tableHost,
-    chartHost,
-    el('h2', { textContent: '측정 한계' }),
-    el('ul', {}, ...LIMITS_NOTES.map((t) => el('li', { textContent: t }))),
+    page(
+      {
+        title: '컴퓨트 벤치: CPU 대 GPU 교차점',
+        lede: '같은 계산을 CPU와 WebGPU로 돌려, 입력이 얼마나 커져야 GPU가 이기기 시작하는지 찾습니다.',
+        chapter: CHAPTER,
+      },
+      section(
+        { title: '무엇을 비교하나' },
+        el('p', { textContent: '구현마다 같은 입력에서 걸린 시간(e2e)을 잽니다. GPU의 e2e에는 업로드, 계산, 결과 읽기가 모두 들어 있습니다. 작은 입력에서는 이 고정 비용 때문에 CPU가 이기고, 입력이 커지면 순서가 뒤집힙니다.' }),
+        plotHost,
+        state.el,
+      ),
+      section(
+        { title: '직접 측정하기' },
+        controls(selectField, el('span', {}, sizeHost), runBtn, previewBtn),
+        summary,
+        chapterLinks,
+        pickHost,
+      ),
+      section({ title: '결과' }, crossText, table.el, tableFix, capsPanel(caps).el),
+      callout('측정 한계', [el('ul', {}, ...LIMITS_NOTES.map((t) => el('li', { textContent: t })))]),
+      callout('해보기', '워크로드를 행렬 곱(GEMM)으로 바꾸고 전체 스윕을 실행해 보세요. N이 커질수록 GPU 선이 CPU 선 아래로 내려가는 지점이 교차점입니다. 점선(커널만)과 실선(e2e)의 간격이 업로드와 읽기 비용입니다.'),
+    ),
   );
+  select.value = workload.id;
   loadWorkload();
+  void runPreview();
+
+  return {
+    async suspendPreview() {
+      suspended = true;
+      syncButtons();
+      await previewRun;
+    },
+    resumePreview() {
+      suspended = false;
+      syncButtons();
+      if (results.length === 0) void runPreview();
+    },
+  };
 }

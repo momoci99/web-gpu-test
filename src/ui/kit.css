@@ -78,6 +78,9 @@ table.results tbody tr:last-child > * { border-bottom: 0; }
 .chart-box { margin: 20px 0 8px; }
 .chart-title { font-weight: 600; font-size: 0.95rem; margin-bottom: 8px; }
 .chart-box .chart { margin: 0; overflow: visible; }
+.chart-empty { display: none; margin: 0; padding: 48px 20px; text-align: center; color: var(--muted); border: 1px dashed var(--border-strong); border-radius: var(--radius); }
+.chart-box.is-empty .chart { display: none; }
+.chart-box.is-empty .chart-empty { display: block; }
 .chart-box .uplot { font-family: var(--font-sans); width: 100%; }
 .chart-box .u-legend { text-align: left; font-size: 0.85rem; color: var(--text); }
 .chart-box .u-legend .u-marker { border-radius: 50%; }

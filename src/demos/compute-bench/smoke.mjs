@@ -8,6 +8,9 @@ export default async function smoke({ page, caps, fail, log }) {
   if (gpuAvailable && !info.hasDevice) fail('WebGPU is available but the page has no GPUDevice');
   if (info.workloads.length === 0) fail('no workloads discovered');
 
+  await page.evaluate(() => window.__demo.suspendPreview());
+  if ((await page.locator('table.results tbody tr').count()) === 0) fail('UI: quick preview produced no rows on load');
+  if ((await page.locator('.chart-box.is-empty').count()) > 0) fail('UI: chart still empty after the preview');
   const rows = [];
   for (const w of info.workloads) {
     for (const impl of w.impls) {
@@ -44,7 +47,8 @@ export default async function smoke({ page, caps, fail, log }) {
 
   const optionCount = await page.locator('select option').count();
   if (optionCount !== info.workloads.length) fail(`UI: ${optionCount} workload options for ${info.workloads.length} workloads`);
-  if ((await page.getByRole('button', { name: '실행' }).count()) !== 1) fail('UI: run button missing');
+  if ((await page.locator('[data-role=run-full]').count()) !== 1) fail('UI: full sweep button missing');
+  if ((await page.locator('[data-role=run-preview]').count()) !== 1) fail('UI: preview button missing');
 
   log('\nworkload/impl                 n        status  e2e.med  kernel.med  readback.med  setup(ms)  check');
   for (const { tag, n, status, r, note } of rows) {

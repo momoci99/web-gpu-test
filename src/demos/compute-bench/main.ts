@@ -6,7 +6,7 @@ import { mountComputeBench } from './ui';
 export const mount: MountDemo = async (root, caps) => {
   const device = await requestComputeDevice(caps);
   const all = workloads();
-  window.__demo = {
+  const hooks = {
     workloads: all.map((w) => ({
       id: w.id,
       sizes: w.sizes,
@@ -22,5 +22,6 @@ export const mount: MountDemo = async (root, caps) => {
       return sweep(w, sizes ?? w.sizes, impls, device);
     },
   };
-  mountComputeBench(root, all, device, caps);
+  window.__demo = hooks;
+  Object.assign(hooks, mountComputeBench(root, all, device, caps));
 };

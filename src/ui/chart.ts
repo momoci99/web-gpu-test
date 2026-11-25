@@ -11,6 +11,8 @@ export interface ChartSpec {
   logX?: boolean;
   logY?: boolean;
   height?: number;
+  /** Shown instead of an empty frame while there is no data. */
+  emptyText?: string;
 }
 
 export interface Chart {
@@ -24,7 +26,9 @@ const MOBILE = 520;
 /** uPlot with theme tokens and the fixed series palette. Rebuilds on light/dark change and resizes with its box. */
 export function chart(spec: ChartSpec): Chart {
   const host = el('div', { className: 'chart' });
-  const root = el('div', { className: 'chart-box' }, spec.title ? el('div', { className: 'chart-title', textContent: spec.title }) : null, host);
+  const empty = el('p', { className: 'chart-empty', textContent: spec.emptyText ?? '아직 측정 결과가 없습니다. 측정을 실행하면 이 자리에 그래프가 그려집니다.' });
+  const root = el('div', { className: 'chart-box' }, spec.title ? el('div', { className: 'chart-title', textContent: spec.title }) : null, empty, host);
+  root.classList.add('is-empty');
   let data: uPlot.AlignedData = [[], ...spec.series.map(() => [])];
   let plot: uPlot | null = null;
   let width = 0;
@@ -87,6 +91,7 @@ export function chart(spec: ChartSpec): Chart {
     el: root,
     setData(xs, ys) {
       data = [xs as number[], ...(ys as (number | null)[][])];
+      root.classList.toggle('is-empty', xs.length === 0);
       plot?.setData(data);
     },
   };
